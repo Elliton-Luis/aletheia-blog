@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
 ---
 
 <BaseLayout title="Página não encontrada" description="Esta página não foi encontrada.">
@@ -7,6 +8,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <p class="eyebrow">Página 404</p>
     <h1>Esta página saiu do caderno.</h1>
     <p>O endereço pode estar incorreto ou o texto pode ter mudado de lugar.</p>
-    <a class="text-link" href="/">Voltar ao início <span aria-hidden="true">→</span></a>
+    <a class="text-link icon-link" href="/">Voltar ao início <Icon name="arrow-left" /></a>
   </section>
 </BaseLayout>

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Icon from '../components/Icon.astro';
 
 interface Props {
   title: string;
@@ -28,11 +29,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <header class="site-header">
       <div class="header-inner">
-        <a class="wordmark" href="/" aria-label="Aletheia — página inicial">Aletheia<span>.</span></a>
+        <a class="wordmark icon-link" href="/" aria-label="Aletheia — página inicial">Aletheia<span>.</span><Icon name="spark" /></a>
         <nav aria-label="Navegação principal">
-          <a href="/artigos/">Textos</a>
-          <a href="/assuntos/">Assuntos</a>
-          <a href="/sobre/">Sobre</a>
+          <a class="icon-link" href="/artigos/"><Icon name="book" /><span>Textos</span></a>
+          <a class="icon-link" href="/assuntos/"><Icon name="tag" /><span>Assuntos</span></a>
+          <a class="icon-link" href="/sobre/"><Icon name="user" /><span>Sobre</span></a>
         </nav>
       </div>
     </header>
@@ -42,7 +43,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <footer class="site-footer">
       <div class="footer-inner">
         <span>Um espaço aberto, sem pressa.</span>
-        <a href="/rss.xml">RSS</a>
+        <a class="icon-link" href="/rss.xml"><Icon name="rss" /><span>RSS</span></a>
       </div>
     </footer>
   </body>

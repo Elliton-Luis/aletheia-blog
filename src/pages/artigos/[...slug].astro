@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
 import { formatDate, type Article } from '../../utils/articles';
 
 export async function getStaticPaths() {
@@ -19,7 +20,7 @@ const { Content } = await render(article);
 <BaseLayout title={article.data.title} description={article.data.description}>
   <article class="post">
     <header class="post-header">
-      <a class="back-link" href="/artigos/">← Todos os textos</a>
+      <a class="back-link icon-link" href="/artigos/"><Icon name="arrow-left" />Todos os textos</a>
       <p class="eyebrow">{article.data.tags.join(' · ') || 'Caderno pessoal'}</p>
       <h1>{article.data.title}</h1>
       <p class="post-deck">{article.data.description}</p>

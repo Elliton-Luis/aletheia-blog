@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
 import { allTags } from '../../utils/articles';
 
 const tags = allTags(await getCollection('articles'));
@@ -14,7 +15,7 @@ const tags = allTags(await getCollection('articles'));
   </header>
   {tags.length ? (
     <ul class="topic-list">
-      {tags.map((tag) => <li><a href={`/assuntos/${encodeURIComponent(tag)}/`}>{tag}<span aria-hidden="true">↗</span></a></li>)}
+      {tags.map((tag) => <li><a class="icon-link" href={`/assuntos/${encodeURIComponent(tag)}/`}>{tag}<Icon name="arrow-up-right" /></a></li>)}
     </ul>
   ) : <p class="empty-note">Os assuntos aparecerão aqui conforme novos textos forem publicados.</p>}
 </BaseLayout>

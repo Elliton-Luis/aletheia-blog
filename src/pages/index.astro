@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import ArticleList from '../components/ArticleList.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
 import { newestFirst } from '../utils/articles';
 
 const articles = newestFirst(await getCollection('articles'));
@@ -11,7 +12,7 @@ const articles = newestFirst(await getCollection('articles'));
   <section class="home-feed" aria-labelledby="recentes">
     <div class="section-heading">
       <div><p class="eyebrow">Aletheia</p><h1 id="recentes">Publicações recentes</h1></div>
-      <a class="text-link" href="/artigos/">Ver todos <span aria-hidden="true">→</span></a>
+      <a class="text-link icon-link" href="/artigos/">Ver todos <Icon name="arrow-right" /></a>
     </div>
     <ArticleList articles={articles.slice(0, 5)} />
   </section>
@@ -19,6 +20,6 @@ const articles = newestFirst(await getCollection('articles'));
   <aside class="home-note" aria-labelledby="consideracoes">
     <p class="eyebrow" id="consideracoes">Considerações</p>
     <p>Um espaço pessoal para registrar o que penso, estudo, leio e descubro. Textos sem a pretensão de encerrar assunto — apenas de acompanhá-lo por um tempo.</p>
-    <a class="text-link" href="/sobre/">Sobre este espaço <span aria-hidden="true">→</span></a>
+    <a class="text-link icon-link" href="/sobre/">Sobre este espaço <Icon name="arrow-right" /></a>
   </aside>
 </BaseLayout>

@@ -1,0 +1,31 @@
+---
+type IconName = 'arrow-left' | 'arrow-right' | 'arrow-up-right' | 'book' | 'rss' | 'spark' | 'tag' | 'user';
+
+interface Props {
+  name: IconName;
+  class?: string;
+}
+
+const { name, class: className } = Astro.props;
+---
+
+<svg
+  class:list={["interface-icon", className]}
+  aria-hidden="true"
+  focusable="false"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.65"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  {name === 'arrow-left' && <><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></>}
+  {name === 'arrow-right' && <><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></>}
+  {name === 'arrow-up-right' && <><path d="M7 17 17 7" /><path d="M8 7h9v9" /></>}
+  {name === 'book' && <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" /><path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20" /><path d="M8 7h8M8 10h7" /></>}
+  {name === 'rss' && <><path d="M5 19h.01" /><path d="M5 12a7 7 0 0 1 7 7" /><path d="M5 5a14 14 0 0 1 14 14" /></>}
+  {name === 'spark' && <><path d="m12 2 1.8 7.2L21 12l-7.2 1.8L12 21l-1.8-7.2L3 12l7.2-2.8z" /><path d="m19 2 .7 2.3L22 5l-2.3.7L19 8l-.7-2.3L16 5l2.3-.7z" /></>}
+  {name === 'tag' && <><path d="M20.6 13.4 13.4 20.6 3 10.2V3h7.2z" /><circle cx="7.5" cy="7.5" r="1" /></>}
+  {name === 'user' && <><circle cx="12" cy="8" r="3.5" /><path d="M5 21a7 7 0 0 1 14 0" /></>}
+</svg>

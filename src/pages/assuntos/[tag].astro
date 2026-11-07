@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import ArticleList from '../../components/ArticleList.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
 import { newestFirst } from '../../utils/articles';
 
 export async function getStaticPaths() {
@@ -18,7 +19,7 @@ const { tag, articles } = Astro.props;
 
 <BaseLayout title={`Assunto: ${tag}`} description={`Textos sobre ${tag} neste caderno pessoal.`}>
   <header class="page-heading">
-    <a class="back-link" href="/assuntos/">← Todos os assuntos</a>
+    <a class="back-link icon-link" href="/assuntos/"><Icon name="arrow-left" />Todos os assuntos</a>
     <p class="eyebrow">Assunto</p>
     <h1>{tag}</h1>
   </header>

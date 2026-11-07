@@ -1,6 +1,7 @@
 ---
 import type { Article } from '../utils/articles';
 import { articlePath, formatDate } from '../utils/articles';
+import Icon from './Icon.astro';
 
 interface Props {
   articles: Article[];
@@ -19,6 +20,7 @@ const { articles } = Astro.props;
             <h3>{article.data.title}</h3>
             <p>{article.data.description}</p>
           </div>
+          <Icon name="arrow-up-right" class="article-arrow" />
         </a>
         {article.data.tags.length > 0 && (
           <ul class="tag-list" aria-label="Assuntos">
