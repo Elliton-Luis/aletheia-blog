@@ -1,0 +1,17 @@
+---
+import { getCollection } from 'astro:content';
+import ArticleList from '../../components/ArticleList.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { newestFirst } from '../../utils/articles';
+
+const articles = newestFirst(await getCollection('articles'));
+---
+
+<BaseLayout title="Textos" description="Todos os textos publicados neste caderno, em ordem cronológica.">
+  <header class="page-heading">
+    <p class="eyebrow">Arquivo</p>
+    <h1>Textos</h1>
+    <p>Um registro em andamento, organizado do mais recente ao mais antigo.</p>
+  </header>
+  <ArticleList articles={articles} />
+</BaseLayout>

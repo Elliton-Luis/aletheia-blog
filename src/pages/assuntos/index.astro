@@ -1,0 +1,20 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { allTags } from '../../utils/articles';
+
+const tags = allTags(await getCollection('articles'));
+---
+
+<BaseLayout title="Assuntos" description="Navegue pelos assuntos presentes nos textos deste caderno.">
+  <header class="page-heading">
+    <p class="eyebrow">Índice</p>
+    <h1>Assuntos</h1>
+    <p>Fios que atravessam os textos — alguns ainda em formação.</p>
+  </header>
+  {tags.length ? (
+    <ul class="topic-list">
+      {tags.map((tag) => <li><a href={`/assuntos/${encodeURIComponent(tag)}/`}>{tag}<span aria-hidden="true">↗</span></a></li>)}
+    </ul>
+  ) : <p class="empty-note">Os assuntos aparecerão aqui conforme novos textos forem publicados.</p>}
+</BaseLayout>

@@ -1,0 +1,35 @@
+---
+import type { Article } from '../utils/articles';
+import { articlePath, formatDate } from '../utils/articles';
+
+interface Props {
+  articles: Article[];
+}
+
+const { articles } = Astro.props;
+---
+
+{articles.length ? (
+  <ol class="article-list">
+    {articles.map((article) => (
+      <li class="article-row">
+        <a class="article-main-link" href={articlePath(article)}>
+          <time class="article-date" datetime={article.data.date.toISOString()}>{formatDate(article.data.date)}</time>
+          <div class="article-summary">
+            <h3>{article.data.title}</h3>
+            <p>{article.data.description}</p>
+          </div>
+        </a>
+        {article.data.tags.length > 0 && (
+          <ul class="tag-list" aria-label="Assuntos">
+            {article.data.tags.map((tag) => (
+              <li><a href={`/assuntos/${encodeURIComponent(tag)}/`}>{tag}</a></li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))}
+  </ol>
+) : (
+  <p class="empty-note">Ainda não há textos publicados por aqui.</p>
+)}

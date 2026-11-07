@@ -1,0 +1,49 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Um espaço pessoal para registrar ideias, leituras e descobertas.' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f3ec" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title="Aletheia — RSS" href="/rss.xml" />
+    <title>{title} · Aletheia</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={`${title} · Aletheia`} />
+    <meta property="og:description" content={description} />
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="wordmark" href="/" aria-label="Aletheia — página inicial">Aletheia<span>.</span></a>
+        <nav aria-label="Navegação principal">
+          <a href="/artigos/">Textos</a>
+          <a href="/assuntos/">Assuntos</a>
+          <a href="/sobre/">Sobre</a>
+        </nav>
+      </div>
+    </header>
+    <main id="conteudo" class="page-shell">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>Um espaço aberto, sem pressa.</span>
+        <a href="/rss.xml">RSS</a>
+      </div>
+    </footer>
+  </body>
+</html>
