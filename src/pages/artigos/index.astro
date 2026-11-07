@@ -2,16 +2,45 @@
 import { getCollection } from 'astro:content';
 import ArticleList from '../../components/ArticleList.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
 import { newestFirst } from '../../utils/articles';
 
 const articles = newestFirst(await getCollection('articles'));
 ---
 
 <BaseLayout title="Textos" description="Todos os textos publicados neste caderno, em ordem cronológica.">
-  <header class="page-heading">
+  <header class="page-heading archive-heading">
     <p class="eyebrow">Arquivo</p>
     <h1>Textos</h1>
-    <p>Um registro em andamento, organizado do mais recente ao mais antigo.</p>
+    <p>Ideias, leituras e descobertas reunidas ao longo do tempo.</p>
   </header>
-  <ArticleList articles={articles} />
+  <section class="archive-controls" aria-label="Filtros do arquivo">
+    <form class="date-filter" id="date-filter" hidden>
+      <p class="filter-title icon-link"><Icon name="calendar" />Filtrar por período</p>
+      <div class="date-fields">
+        <label for="date-from">De
+          <input id="date-from" name="from" type="date" />
+        </label>
+        <label for="date-to">Até
+          <input id="date-to" name="to" type="date" />
+        </label>
+        <button class="clear-filter" type="submit">Aplicar</button>
+        <button class="clear-filter" id="clear-dates" type="button">Limpar datas</button>
+      </div>
+    </form>
+    <p class="archive-count" id="archive-count" aria-live="polite" hidden></p>
+  </section>
+  <div class="virtual-archive" id="virtual-archive">
+    <div class="virtual-spacer" id="top-spacer" aria-hidden="true" hidden></div>
+    <div class="virtual-sentinel" id="top-sentinel" aria-hidden="true"></div>
+    <button class="archive-more archive-previous" id="load-previous" type="button" hidden>Carregar textos anteriores</button>
+    <ArticleList articles={articles} />
+    <p class="empty-note" id="no-matches" hidden>Nenhum texto encontrado nesse período.</p>
+    <div class="virtual-sentinel" id="bottom-sentinel" aria-hidden="true"></div>
+    <button class="archive-more" id="load-more" type="button" hidden>Carregar mais textos</button>
+    <div class="virtual-spacer" id="bottom-spacer" aria-hidden="true" hidden></div>
+  </div>
+  <script>
+    import '../../scripts/archive.ts';
+  </script>
 </BaseLayout>

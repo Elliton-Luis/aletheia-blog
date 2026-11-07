@@ -16,7 +16,13 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f6f3ec" />
+    <meta name="theme-color" content="#f4efe3" />
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem('aletheia-theme');
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="alternate" type="application/rss+xml" title="Aletheia — RSS" href="/rss.xml" />
@@ -34,6 +40,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           <a class="icon-link" href="/artigos/"><Icon name="book" /><span>Textos</span></a>
           <a class="icon-link" href="/assuntos/"><Icon name="tag" /><span>Assuntos</span></a>
           <a class="icon-link" href="/sobre/"><Icon name="user" /><span>Sobre</span></a>
+          <button class="theme-toggle icon-link" id="theme-toggle" type="button" aria-label="Alternar tema" aria-pressed="false">
+            <Icon name="moon" class="theme-icon-moon" />
+            <Icon name="sun" class="theme-icon-sun" />
+            <span>Tema</span>
+          </button>
         </nav>
       </div>
     </header>
@@ -44,7 +55,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       <div class="footer-inner">
         <span>Um espaço aberto, sem pressa.</span>
         <a class="icon-link" href="/rss.xml"><Icon name="rss" /><span>RSS</span></a>
+        <span class="print-credit">Créditos: O Eleito</span>
       </div>
     </footer>
+    <script>
+      import '../scripts/theme.ts';
+    </script>
   </body>
 </html>
