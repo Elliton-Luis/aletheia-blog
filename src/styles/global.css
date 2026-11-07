@@ -47,8 +47,9 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .site-header { border-bottom: 3px double var(--line); }
 .header-inner, .footer-inner { width: min(50vw, 56rem); margin-inline: auto; display: flex; align-items: center; justify-content: space-between; }
 .header-inner { min-height: 5.25rem; }
-.wordmark { display: inline-flex; align-items: center; gap: .3rem; font-family: var(--serif); font-size: 1.55rem; font-weight: 700; letter-spacing: -.045em; text-decoration: none; }
-.wordmark span { color: var(--accent); }
+.wordmark { display: inline-flex; align-items: center; gap: .5rem; color: var(--ink); font-family: var(--serif); font-size: 1.55rem; font-weight: 700; letter-spacing: -.045em; text-decoration: none; }
+.brand-mark { width: 1.8rem; height: 1.8rem; flex: none; color: var(--accent); fill: transparent; transition: fill .18s ease, transform .18s ease; }
+.wordmark:hover .brand-mark, .wordmark:focus-visible .brand-mark { fill: color-mix(in srgb, var(--accent) 14%, transparent); transform: rotate(-4deg); }
 nav { display: flex; gap: clamp(1.1rem, 3vw, 2.25rem); }
 nav a, .footer-inner a { color: var(--muted); font-size: .9rem; text-decoration: none; }
 nav a:hover, .footer-inner a:hover { color: var(--ink); }
@@ -144,7 +145,11 @@ h1 em { color: var(--muted); font-weight: 400; }
 .not-found { max-width: 100%; padding: clamp(6rem, 18vw, 12rem) 0; }
 .not-found > p:not(.eyebrow) { margin: 1.2rem 0 1.5rem; color: var(--muted); }
 .site-footer { border-top: 1px solid var(--line); }
-.footer-inner { min-height: 5rem; color: var(--muted); font-size: .8rem; }
+.footer-inner { min-height: 5rem; flex-wrap: wrap; gap: .5rem 1.25rem; padding-block: .8rem; color: var(--muted); font-size: .82rem; }
+.contact-email { overflow-wrap: anywhere; }
+.about-contact { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+.about-contact .eyebrow { margin-bottom: .4rem; }
+.about-contact a { color: var(--accent); text-decoration: none; }
 
 @media (max-width: 900px) {
   .header-inner, .footer-inner, .page-shell { width: min(76vw, 56rem); }
@@ -154,6 +159,7 @@ h1 em { color: var(--muted); font-weight: 400; }
   .header-inner, .footer-inner { width: min(100% - 2rem, 56rem); }
   .header-inner { min-height: 4.5rem; flex-wrap: wrap; justify-content: center; gap: .35rem 1.2rem; padding: .65rem 0; }
   .wordmark { font-size: 1.35rem; }
+  .brand-mark { width: 1.6rem; height: 1.6rem; }
   nav { flex-wrap: wrap; justify-content: center; gap: .4rem .75rem; }
   nav a, nav .theme-toggle { font-size: .76rem; }
   .page-shell { width: min(100% - 2rem, 56rem); }
@@ -205,7 +211,7 @@ h1 em { color: var(--muted); font-weight: 400; }
   .site-header { border-bottom: 1px solid #77736a; }
   .header-inner { width: 100%; min-height: 0; justify-content: flex-start; padding: 0 0 .45rem; }
   .wordmark { color: #171714 !important; font-size: 19pt; }
-  .wordmark .interface-icon { width: 1em; height: 1em; }
+  .wordmark .brand-mark { width: 1.1em; height: 1.1em; }
   .page-shell { width: 100%; min-height: 0; margin: 0; }
   .home-feed, .home-note, .about-page, .page-heading { padding-top: 1rem; padding-bottom: 1rem; }
   .page-heading { text-align: left; }

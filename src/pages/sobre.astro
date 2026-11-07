@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
 ---
 
 <BaseLayout title="Sobre" description="Sobre este caderno pessoal e seu propósito.">
@@ -11,5 +12,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <p>Aristóteles escreveu sobre a física com os conhecimentos de seu tempo; muitas de suas explicações hoje estão superadas. Ainda assim, o valor daquele trabalho não depende apenas de ter acertado. Está também no exercício de observar, perguntar e pensar.</p>
       <p>É esse exercício que quero registrar aqui: um pensamento em processo, sujeito a dúvidas, mudanças e erros. O importante não é apenas estar certo, mas se permitir pensar.</p>
     </div>
+    <section class="about-contact" aria-labelledby="contact-heading">
+      <p class="eyebrow" id="contact-heading">Contato</p>
+      <a class="icon-link" href="mailto:oeleito.blog@gmail.com"><Icon name="mail" />oeleito.blog@gmail.com</a>
+    </section>
   </article>
 </BaseLayout>

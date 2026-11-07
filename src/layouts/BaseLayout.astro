@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Icon from '../components/Icon.astro';
+import BrandLogo from '../components/BrandLogo.astro';
 
 interface Props {
   title: string;
@@ -17,6 +18,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f4efe3" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script is:inline>
       try {
         const theme = localStorage.getItem('aletheia-theme');
@@ -28,6 +30,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <link rel="alternate" type="application/rss+xml" title="Aletheia — RSS" href="/rss.xml" />
     <title>{title} · Aletheia</title>
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Aletheia" />
     <meta property="og:title" content={`${title} · Aletheia`} />
     <meta property="og:description" content={description} />
   </head>
@@ -35,7 +38,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <header class="site-header">
       <div class="header-inner">
-        <a class="wordmark icon-link" href="/" aria-label="Aletheia — página inicial">Aletheia<span>.</span><Icon name="spark" /></a>
+        <BrandLogo />
         <nav aria-label="Navegação principal">
           <a class="icon-link" href="/artigos/"><Icon name="book" /><span>Textos</span></a>
           <a class="icon-link" href="/assuntos/"><Icon name="tag" /><span>Assuntos</span></a>
@@ -55,6 +58,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       <div class="footer-inner">
         <span>Um espaço aberto, sem pressa.</span>
         <a class="icon-link" href="/rss.xml"><Icon name="rss" /><span>RSS</span></a>
+        <a class="icon-link contact-email" href="mailto:oeleito.blog@gmail.com"><Icon name="mail" /><span>oeleito.blog@gmail.com</span></a>
         <span class="print-credit">Créditos: O Eleito</span>
       </div>
     </footer>
