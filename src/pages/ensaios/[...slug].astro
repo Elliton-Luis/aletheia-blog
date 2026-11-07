@@ -22,7 +22,7 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
 <BaseLayout title={article.data.title} description={article.data.description} wide>
   <article class="post">
     <header class="post-header">
-      <a class="back-link icon-link" href="/artigos/"><Icon name="arrow-left" />Todos os ensaios</a>
+      <a class="back-link icon-link" href="/ensaios/"><Icon name="arrow-left" />Todos os ensaios</a>
       <p class="eyebrow">{article.data.tags.join(' · ') || 'Caderno pessoal'}</p>
       <p class="post-class" title={category.title}><strong>{category.name}</strong> · {category.formatted} caracteres · {category.minutes} min de leitura</p>
       <h1>{article.data.title}</h1>
@@ -45,13 +45,13 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
         </p>
       </div>
       {tableOfContents.length > 0 && (
-        <aside class="post-toc" aria-label="Títulos deste artigo">
+        <aside class="post-toc" aria-label="Títulos deste ensaio">
           <ul class="toc-actions">
-            <li><a class="icon-link" href="/artigos/"><Icon name="arrow-left" />Sair</a></li>
+            <li><a class="icon-link" href="/ensaios/"><Icon name="arrow-left" />Sair</a></li>
             <li><a class="icon-link" href="#topo"><Icon name="arrow-up" />Ir ao topo</a></li>
           </ul>
           <p class="eyebrow">Neste ensaio</p>
-          <nav aria-label="Índice do artigo">
+          <nav aria-label="Índice do ensaio">
             <ol class="toc-list">
               {tableOfContents.map((heading) => (
                 <li class:list={[`toc-depth-${heading.depth}`]}>

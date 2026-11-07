@@ -12,7 +12,7 @@ const articles = newestFirst(await getCollection('articles'));
   <section class="home-feed" aria-labelledby="recentes">
     <div class="section-heading">
       <div><p class="eyebrow">Aletheia</p><h1 id="recentes">Publicações recentes</h1></div>
-      <a class="text-link icon-link" href="/artigos/">Ver todos <Icon name="arrow-right" /></a>
+      <a class="text-link icon-link" href="/ensaios/">Ver todos <Icon name="arrow-right" /></a>
     </div>
     <ArticleList articles={articles.slice(0, 5)} />
   </section>

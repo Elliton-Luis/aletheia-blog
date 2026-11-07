@@ -7,7 +7,7 @@ export function newestFirst(articles: Article[]) {
 }
 
 export function articlePath(article: Article) {
-  return `/artigos/${article.id}/`;
+  return `/ensaios/${article.id}/`;
 }
 
 export function allTags(articles: Article[]) {

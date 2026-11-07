@@ -1,10 +1,10 @@
 # Aletheia
 
-Blog pessoal estático feito com Astro. Os artigos vivem em `src/content/articles/`; cada arquivo Markdown gera sua página, entra no arquivo cronológico e tem suas tags indexadas automaticamente.
+Blog pessoal estático feito com Astro. Os ensaios vivem em `src/content/articles/`; cada arquivo Markdown gera sua página, entra no arquivo cronológico e tem suas tags indexadas automaticamente.
 
-O arquivo `/artigos/` permite filtrar publicações por período. Ao rolar, ele acrescenta os próximos textos e retira os mais distantes da tela, preservando a posição de leitura. O botão **Tema** alterna entre claro e escuro e guarda a preferência neste navegador.
+O arquivo `/ensaios/` permite filtrar publicações por período. Ao rolar, ele acrescenta os próximos ensaios e retira os mais distantes da tela, preservando a posição de leitura. O botão **Tema** alterna entre claro e escuro e guarda a preferência neste navegador.
 
-Os artigos e as páginas de assunto são agrupados por mês. Em cada artigo, o índice lateral acompanha os títulos das seções. O arquivo-fonte `src/content/articles/example.md` fica fora da coleção publicada; seus textos foram separados em artigos próprios.
+Os ensaios e as páginas de assunto são agrupados por mês. Em cada ensaio, o índice lateral acompanha os títulos das seções. O arquivo-fonte `src/content/articles/example.md` fica fora da coleção publicada; seus textos foram separados em artigos próprios.
 
 ## Começar
 
@@ -15,9 +15,9 @@ npm install
 npm run dev
 ```
 
-## Publicar um artigo
+## Publicar um ensaio
 
-Crie um arquivo `.md` em `src/content/articles/`. O nome do arquivo define o slug e a URL permanente. Por exemplo, `conhecimento-e-inteligencia.md` fica em `/artigos/conhecimento-e-inteligencia/`.
+Crie um arquivo `.md` em `src/content/articles/`. O nome do arquivo define o slug e a URL permanente. Por exemplo, `conhecimento-e-inteligencia.md` fica em `/ensaios/conhecimento-e-inteligencia/`.
 
 ```md
 ---
@@ -30,7 +30,7 @@ tags:
 ---
 
 O texto começa aqui. Use Markdown normalmente: títulos, listas, citações, links,
-imagens e blocos de código são renderizados no artigo.
+imagens e blocos de código são renderizados no ensaio.
 ```
 
 O título, data e descrição são obrigatórios; `tags` pode ser omitido. A data segue `AAAA-MM-DD`. Para manter um endereço já publicado, não renomeie o arquivo.
