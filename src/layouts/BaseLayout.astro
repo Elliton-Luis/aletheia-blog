@@ -38,15 +38,19 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:title" content={`${title} · Aletheia`} />
     <meta property="og:description" content={description} />
   </head>
-  <body>
+  <body id="topo">
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <header class="site-header">
       <div class="header-inner">
         <BrandLogo />
         <nav aria-label="Navegação principal">
-          <a class="icon-link" href="/artigos/"><Icon name="book" /><span>Textos</span></a>
+          <a class="icon-link" href="/artigos/"><Icon name="book" /><span>Ensaios</span></a>
           <a class="icon-link" href="/assuntos/"><Icon name="tag" /><span>Assuntos</span></a>
           <a class="icon-link" href="/sobre/"><Icon name="user" /><span>Sobre</span></a>
+          <button class="theme-toggle icon-link" id="print-button" type="button" aria-label="Imprimir esta página">
+            <Icon name="printer" />
+            <span>Imprimir</span>
+          </button>
           <button class="theme-toggle icon-link" id="theme-toggle" type="button" aria-label="Alternar tema" aria-pressed="false">
             <Icon name="moon" class="theme-icon-moon" />
             <Icon name="sun" class="theme-icon-sun" />
@@ -62,12 +66,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       <div class="footer-inner">
         <span class="footer-tagline">Um espaço aberto, sem pressa.</span>
         <span class="footer-credit">© O Eleito</span>
-        <a class="icon-link" href="/rss.xml"><Icon name="rss" /><span>RSS</span></a>
         <a class="icon-link contact-email" href="mailto:oeleito.blog@gmail.com"><Icon name="mail" /><span>oeleito.blog@gmail.com</span></a>
       </div>
     </footer>
     <script>
       import '../scripts/theme.ts';
+      import '../scripts/print.ts';
     </script>
   </body>
 </html>

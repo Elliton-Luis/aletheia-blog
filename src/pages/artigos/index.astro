@@ -8,10 +8,10 @@ import { newestFirst } from '../../utils/articles';
 const articles = newestFirst(await getCollection('articles'));
 ---
 
-<BaseLayout title="Textos" description="Todos os textos publicados neste caderno, em ordem cronológica.">
+<BaseLayout title="Ensaios" description="Todos os ensaios publicados neste caderno, em ordem cronológica.">
   <header class="page-heading archive-heading">
     <p class="eyebrow">Arquivo</p>
-    <h1>Textos</h1>
+    <h1>Ensaios</h1>
     <p>Ideias, leituras e descobertas reunidas ao longo do tempo.</p>
   </header>
   <section class="archive-controls" aria-label="Filtros do arquivo">
@@ -33,11 +33,11 @@ const articles = newestFirst(await getCollection('articles'));
   <div class="virtual-archive" id="virtual-archive">
     <div class="virtual-spacer" id="top-spacer" aria-hidden="true" hidden></div>
     <div class="virtual-sentinel" id="top-sentinel" aria-hidden="true"></div>
-    <button class="archive-more archive-previous" id="load-previous" type="button" hidden>Carregar textos anteriores</button>
+    <button class="archive-more archive-previous" id="load-previous" type="button" hidden>Carregar ensaios anteriores</button>
     <ArticleList articles={articles} />
-    <p class="empty-note" id="no-matches" hidden>Nenhum texto encontrado nesse período.</p>
+    <p class="empty-note" id="no-matches" hidden>Nenhum ensaio encontrado nesse período.</p>
     <div class="virtual-sentinel" id="bottom-sentinel" aria-hidden="true"></div>
-    <button class="archive-more" id="load-more" type="button" hidden>Carregar mais textos</button>
+    <button class="archive-more" id="load-more" type="button" hidden>Carregar mais ensaios</button>
     <div class="virtual-spacer" id="bottom-spacer" aria-hidden="true" hidden></div>
   </div>
   <script>

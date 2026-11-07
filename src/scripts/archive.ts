@@ -102,8 +102,8 @@ if (
     noMatches.hidden = filtered.length !== 0;
 
     archiveCount.textContent = filtered.length === 0
-      ? 'Nenhum texto neste período.'
-      : `Mostrando ${start + 1}–${end} de ${filtered.length} ${filtered.length === 1 ? 'texto' : 'textos'}`;
+      ? 'Nenhum ensaio neste período.'
+      : `Mostrando ${start + 1}–${end} de ${filtered.length} ${filtered.length === 1 ? 'ensaio' : 'ensaios'}`;
   }
 
   function renderWindow() {

@@ -17,7 +17,7 @@ export async function getStaticPaths() {
 const { tag, articles } = Astro.props;
 ---
 
-<BaseLayout title={`Assunto: ${tag}`} description={`Textos sobre ${tag} neste caderno pessoal.`}>
+<BaseLayout title={`Assunto: ${tag}`} description={`Ensaios sobre ${tag} neste caderno pessoal.`}>
   <header class="page-heading">
     <a class="back-link icon-link" href="/assuntos/"><Icon name="arrow-left" />Todos os assuntos</a>
     <p class="eyebrow">Assunto</p>

@@ -7,15 +7,30 @@ import { allTags } from '../../utils/articles';
 const tags = allTags(await getCollection('articles'));
 ---
 
-<BaseLayout title="Assuntos" description="Navegue pelos assuntos presentes nos textos deste caderno.">
+<BaseLayout title="Assuntos" description="Navegue pelos assuntos presentes nos ensaios deste caderno.">
   <header class="page-heading">
     <p class="eyebrow">Índice</p>
     <h1>Assuntos</h1>
-    <p>Fios que atravessam os textos — alguns ainda em formação.</p>
+    <p>Fios que atravessam os ensaios — alguns ainda em formação.</p>
   </header>
+  {tags.length > 1 && (
+    <input class="topic-search" id="topic-search" type="search" placeholder="Buscar assunto" aria-label="Buscar assunto" autocomplete="off" hidden />
+  )}
   {tags.length ? (
-    <ul class="topic-list">
+    <ul class="topic-list" id="topic-list">
       {tags.map((tag) => <li><a class="icon-link" href={`/assuntos/${encodeURIComponent(tag)}/`}>{tag}<Icon name="arrow-up-right" /></a></li>)}
     </ul>
-  ) : <p class="empty-note">Os assuntos aparecerão aqui conforme novos textos forem publicados.</p>}
+  ) : <p class="empty-note">Os assuntos aparecerão aqui conforme novos ensaios forem publicados.</p>}
 </BaseLayout>
+<script>
+  const input = document.querySelector<HTMLInputElement>('#topic-search');
+  const items = Array.from(document.querySelectorAll<HTMLLIElement>('#topic-list li'));
+  const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  if (input) {
+    input.hidden = false;
+    input.addEventListener('input', () => {
+      const query = norm(input.value);
+      for (const item of items) item.hidden = !norm(item.textContent ?? '').includes(query);
+    });
+  }
+</script>
