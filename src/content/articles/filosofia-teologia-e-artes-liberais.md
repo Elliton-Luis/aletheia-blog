@@ -10,7 +10,7 @@ tags:
 
 ## Começar pela filosofia
 
-A teologia e a filosofia, as duas ciências elevadas, né? O amor ao conhecimento: philos, amor; sophia, sabedoria. E a teologia: theo, Deus; logia, logos, razão, propósito. É o estudo de Deus, é a razão de Deus. Então, é até um pouco contraditório você pensar; é até um pouco sem sentido você começar a estudar pela teologia. Não é crítica aos catequistas, nem à forma, nem nada do tipo, mas não começar por uma questão um pouco mais básica. Eu nem digo básica das ciências liberais, das artes liberais; isso seria mais papel da escola e papel de vocês, né, de estudar. Mas eu falo sobre a questão da filosofia.
+A teologia e a filosofia, as duas ciências elevadas. O amor ao conhecimento: philos, amor; sophia, sabedoria. E a teologia: theo, Deus; logia, logos, razão, propósito. É o estudo de Deus, é a razão de Deus. Então, é até um pouco contraditório você pensar; é até um pouco sem sentido você começar a estudar pela teologia. Não é crítica aos catequistas, nem à forma, nem nada do tipo, mas não começar por uma questão um pouco mais básica. Eu nem digo básica das ciências liberais, das artes liberais; isso seria mais papel da escola e papel de vocês, né, de estudar. Mas eu falo sobre a questão da filosofia.
 
 ## Saber o quê e saber o porquê
 
