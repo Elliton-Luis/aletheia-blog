@@ -25,6 +25,7 @@ const { Content } = await render(article);
       <h1>{article.data.title}</h1>
       <p class="post-deck">{article.data.description}</p>
       <time datetime={article.data.date.toISOString()}>{formatDate(article.data.date)}</time>
+      <p class="post-author">Por <strong>O Eleito</strong></p>
     </header>
     <div class="prose"><Content /></div>
     {article.data.tags.length > 0 && (
@@ -33,5 +34,9 @@ const { Content } = await render(article);
         {article.data.tags.map((tag) => <a href={`/assuntos/${encodeURIComponent(tag)}/`}>{tag}</a>)}
       </footer>
     )}
+    <p class="post-contact">
+      Alguma sugestão de melhoria ou quer só conversar? Entre em contato com
+      <a href="mailto:oeleito.blog@gmail.com">oeleito.blog@gmail.com</a>.
+    </p>
   </article>
 </BaseLayout>

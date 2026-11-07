@@ -146,10 +146,14 @@ h1 em { color: var(--muted); font-weight: 400; }
 .not-found > p:not(.eyebrow) { margin: 1.2rem 0 1.5rem; color: var(--muted); }
 .site-footer { border-top: 1px solid var(--line); }
 .footer-inner { min-height: 5rem; flex-wrap: wrap; gap: .5rem 1.25rem; padding-block: .8rem; color: var(--muted); font-size: .82rem; }
+.footer-credit { color: var(--accent); font-variant: small-caps; letter-spacing: .04em; }
 .contact-email { overflow-wrap: anywhere; }
 .about-contact { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
 .about-contact .eyebrow { margin-bottom: .4rem; }
 .about-contact a { color: var(--accent); text-decoration: none; }
+.post-author { margin: .2rem 0 0; color: var(--muted); font-size: .9rem; }
+.post-contact { margin-top: 2.5rem; padding: 1rem 0; border-top: 1px solid var(--line); color: var(--muted); font-size: .96rem; }
+.post-contact a { color: var(--accent); }
 
 @media (max-width: 900px) {
   .header-inner, .footer-inner, .page-shell { width: min(76vw, 56rem); }
@@ -193,7 +197,7 @@ h1 em { color: var(--muted); font-weight: 400; }
 }
 
 @media print {
-  :root {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
     color-scheme: light;
     --paper: #fff;
     --paper-raised: #f6f3ed;
@@ -208,7 +212,7 @@ h1 em { color: var(--muted); font-weight: 400; }
   html, body { width: auto; min-height: 0; color: #171714; background: #fff !important; font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.55; }
   body { -webkit-font-smoothing: grayscale; }
   .skip-link, nav, .theme-toggle, .archive-controls, .archive-more, .virtual-spacer, .virtual-sentinel { display: none !important; }
-  .site-header { border-bottom: 1px solid #77736a; }
+  .site-header { border-bottom: 1px solid #aaa69c !important; }
   .header-inner { width: 100%; min-height: 0; justify-content: flex-start; padding: 0 0 .45rem; }
   .wordmark { color: #171714 !important; font-size: 19pt; }
   .wordmark .brand-mark { width: 1.1em; height: 1.1em; }
@@ -218,9 +222,10 @@ h1 em { color: var(--muted); font-weight: 400; }
   .page-heading h1, .about-page h1 { font-size: 25pt; }
   .section-heading h1, .section-heading h2 { font-size: 18pt; }
   .post { max-width: none; padding: 1rem 0 0; }
-  .post-header { padding-bottom: .8rem; text-align: left; }
+  .post-header { padding-bottom: .8rem; text-align: left; border-bottom: 1px solid #aaa69c !important; }
   .post-header h1 { margin: .25rem 0 .5rem; font-size: 25pt; }
   .post-deck { font-size: 12pt; }
+  .post-author { color: #444; font-size: 9pt; }
   .back-link { display: none; }
   .prose { padding-top: .4rem; font-size: 11.5pt; line-height: 1.62; }
   .prose h2 { font-size: 17pt; }
@@ -228,7 +233,7 @@ h1 em { color: var(--muted); font-weight: 400; }
   h1, h2, h3, h4 { break-after: avoid-page; page-break-after: avoid; }
   p, li { orphans: 3; widows: 3; }
   blockquote, pre, img, figure, .article-row { break-inside: avoid-page; page-break-inside: avoid; }
-  .prose blockquote { color: #333; border-color: #777; }
+  .prose blockquote { color: #333; border-width: 1px; border-color: #999 !important; }
   .prose pre { overflow: visible; white-space: pre-wrap; overflow-wrap: anywhere; background: #f6f3ed; border-color: #bbb; font-size: 9pt; }
   .prose img { max-height: 22cm; object-fit: contain; }
   a, .article-main-link, .post-footer a { color: #171714 !important; text-decoration: none !important; }
@@ -237,8 +242,10 @@ h1 em { color: var(--muted); font-weight: 400; }
   .article-arrow { display: none; }
   .tag-list { margin-left: 0; }
   .archive-count { display: none !important; }
-  .site-footer { margin-top: 1.2rem; border-top: 1px solid #77736a; }
+  .site-footer { margin-top: 1.2rem; border-top: 1px solid #aaa69c !important; }
   .footer-inner { width: 100%; min-height: 0; justify-content: flex-end; padding-top: .4rem; color: #444; font-size: 9pt; }
-  .footer-inner > span:not(.print-credit), .footer-inner a { display: none !important; }
-  .print-credit { display: block; }
+  .footer-tagline, .footer-inner a { display: none !important; }
+  .footer-credit { display: block; color: #333; }
+  .home-note, .article-row, .post-footer, .about-contact { border-color: #aaa69c !important; }
+  .post-contact { border-top: 1px solid #aaa69c !important; color: #333; }
 }

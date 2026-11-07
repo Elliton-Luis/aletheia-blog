@@ -26,6 +26,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       } catch {}
     </script>
     <meta name="description" content={description} />
+    <meta name="author" content="O Eleito" />
+    <meta name="copyright" content="© O Eleito" />
     <link rel="canonical" href={canonical} />
     <link rel="alternate" type="application/rss+xml" title="Aletheia — RSS" href="/rss.xml" />
     <title>{title} · Aletheia</title>
@@ -56,10 +58,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     </main>
     <footer class="site-footer">
       <div class="footer-inner">
-        <span>Um espaço aberto, sem pressa.</span>
+        <span class="footer-tagline">Um espaço aberto, sem pressa.</span>
+        <span class="footer-credit">© O Eleito</span>
         <a class="icon-link" href="/rss.xml"><Icon name="rss" /><span>RSS</span></a>
         <a class="icon-link contact-email" href="mailto:oeleito.blog@gmail.com"><Icon name="mail" /><span>oeleito.blog@gmail.com</span></a>
-        <span class="print-credit">Créditos: O Eleito</span>
       </div>
     </footer>
     <script>
