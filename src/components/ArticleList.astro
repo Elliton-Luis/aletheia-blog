@@ -8,12 +8,28 @@ interface Props {
 }
 
 const { articles } = Astro.props;
+const rows = articles.map((article, index) => {
+  const date = article.data.date;
+  const monthKey = date.toISOString().slice(0, 7);
+  const monthDate = new Date(`${monthKey}-01T00:00:00Z`);
+  const month = new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: 'UTC' }).format(monthDate);
+  const monthName = `${month.charAt(0).toLocaleUpperCase('pt-BR')}${month.slice(1)}`;
+  const previousMonth = index > 0 ? articles[index - 1].data.date.toISOString().slice(0, 7) : null;
+
+  return { article, monthKey, monthName, year: monthDate.getUTCFullYear(), startsMonth: monthKey !== previousMonth };
+});
 ---
 
 {articles.length ? (
   <ol class="article-list">
-    {articles.map((article) => (
-      <li class="article-row">
+    {rows.map(({ article, monthKey, monthName, year, startsMonth }) => (
+      <li class:list={['article-row', startsMonth && 'month-start']} data-month={monthKey}>
+        {startsMonth && (
+          <h2 class="month-heading" data-month={monthKey}>
+            <span>{monthName}</span>
+            <time datetime={`${monthKey}-01`}>{year}</time>
+          </h2>
+        )}
         <a class="article-main-link" href={articlePath(article)}>
           <time class="article-date" datetime={article.data.date.toISOString()}>{formatDate(article.data.date)}</time>
           <div class="article-summary">

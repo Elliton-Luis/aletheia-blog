@@ -1,6 +1,7 @@
 interface ArchiveEntry {
   html: string;
   date: string;
+  month: string;
   height: number;
 }
 
@@ -33,12 +34,18 @@ if (
   const buttonNext = nextButton;
   const pageSize = 12;
   const maxPagesInDom = 3;
+  const monthHeadingHeight = Math.ceil(articleList.querySelector<HTMLElement>('.month-heading')?.getBoundingClientRect().height ?? 0);
   const entries: ArchiveEntry[] = Array.from(articleList.children).map((element) => {
     const row = element as HTMLLIElement;
+    const date = row.querySelector<HTMLTimeElement>('.article-date')?.dateTime.slice(0, 10) ?? '';
+    const heading = row.querySelector<HTMLElement>('.month-heading');
+    const cleanRow = row.cloneNode(true) as HTMLLIElement;
+    cleanRow.querySelector('.month-heading')?.remove();
     return {
-      html: row.outerHTML,
-      date: row.querySelector('time')?.dateTime.slice(0, 10) ?? '',
-      height: Math.ceil(row.getBoundingClientRect().height),
+      html: cleanRow.outerHTML,
+      date,
+      month: date.slice(0, 7),
+      height: Math.ceil(row.getBoundingClientRect().height - (heading?.getBoundingClientRect().height ?? 0)),
     };
   });
 
@@ -46,11 +53,44 @@ if (
   let start = 0;
   let end = Math.min(pageSize, filtered.length);
 
-  const heightBetween = (from: number, to: number) =>
-    filtered.slice(from, to).reduce((total, entry) => total + entry.height, 0);
+  function heightBetween(from: number, to: number) {
+    let height = 0;
+    let previousMonth = from > 0 ? filtered[from - 1].month : null;
+
+    for (let index = from; index < to; index += 1) {
+      const entry = filtered[index];
+      if (entry.month !== previousMonth) height += monthHeadingHeight;
+      height += entry.height;
+      previousMonth = entry.month;
+    }
+    return height;
+  }
+
+  function monthHeading(entry: ArchiveEntry) {
+    const date = new Date(`${entry.month}-01T00:00:00Z`);
+    const month = new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: 'UTC' }).format(date);
+    const monthName = `${month.charAt(0).toLocaleUpperCase('pt-BR')}${month.slice(1)}`;
+    const year = date.getUTCFullYear();
+    return `<h2 class="month-heading" data-month="${entry.month}"><span>${monthName}</span><time datetime="${entry.month}-01">${year}</time></h2>`;
+  }
+
+  function renderRange(from: number, to: number, repeatHeaderAtStart = false) {
+    let previousMonth = from > 0 ? filtered[from - 1].month : null;
+    return filtered.slice(from, to).map((entry, offset) => {
+      let html = entry.html;
+      if (entry.month !== previousMonth || (repeatHeaderAtStart && offset === 0)) {
+        html = html.replace(/class="article-row(?: month-start)?"/, 'class="article-row month-start"');
+        const openingTagEnd = html.indexOf('>') + 1;
+        html = `${html.slice(0, openingTagEnd)}${monthHeading(entry)}${html.slice(openingTagEnd)}`;
+      }
+      previousMonth = entry.month;
+      return html;
+    }).join('');
+  }
 
   function updateSpacers() {
-    const beforeHeight = heightBetween(0, start);
+    const repeatedHeading = start > 0 && filtered[start]?.month === filtered[start - 1]?.month;
+    const beforeHeight = heightBetween(0, start) - (repeatedHeading ? monthHeadingHeight : 0);
     const afterHeight = heightBetween(end, filtered.length);
     spacerBefore.style.height = `${beforeHeight}px`;
     spacerAfter.style.height = `${afterHeight}px`;
@@ -69,36 +109,36 @@ if (
   function renderWindow() {
     start = 0;
     end = Math.min(pageSize, filtered.length);
-    articleList.innerHTML = filtered.slice(start, end).map((entry) => entry.html).join('');
+    renderCurrentWindow();
+  }
+
+  function renderCurrentWindow() {
+    articleList.innerHTML = renderRange(start, end, start > 0);
     updateSpacers();
   }
 
   function loadNext() {
     if (end >= filtered.length) return;
     const nextEnd = Math.min(end + pageSize, filtered.length);
-    articleList.insertAdjacentHTML('beforeend', filtered.slice(end, nextEnd).map((entry) => entry.html).join(''));
     end = nextEnd;
 
     if (end - start > pageSize * maxPagesInDom) {
       const removeCount = Math.min(pageSize, end - start - pageSize * (maxPagesInDom - 1));
-      for (let index = 0; index < removeCount; index += 1) articleList.firstElementChild?.remove();
       start += removeCount;
     }
-    updateSpacers();
+    renderCurrentWindow();
   }
 
   function loadPrevious() {
     if (start === 0) return;
     const previousStart = Math.max(0, start - pageSize);
-    articleList.insertAdjacentHTML('afterbegin', filtered.slice(previousStart, start).map((entry) => entry.html).join(''));
     start = previousStart;
 
     if (end - start > pageSize * maxPagesInDom) {
       const removeCount = Math.min(pageSize, end - start - pageSize * (maxPagesInDom - 1));
-      for (let index = 0; index < removeCount; index += 1) articleList.lastElementChild?.remove();
       end -= removeCount;
     }
-    updateSpacers();
+    renderCurrentWindow();
   }
 
   function applyDateRange() {
@@ -109,7 +149,7 @@ if (
   }
 
   function prepareForPrint() {
-    articleList.innerHTML = filtered.map((entry) => entry.html).join('');
+    articleList.innerHTML = renderRange(0, filtered.length);
     articleList.hidden = filtered.length === 0;
     noMatches.hidden = filtered.length !== 0;
     spacerBefore.hidden = true;
@@ -119,7 +159,7 @@ if (
   }
 
   function restoreAfterPrint() {
-    articleList.innerHTML = filtered.slice(start, end).map((entry) => entry.html).join('');
+    articleList.innerHTML = renderRange(start, end, start > 0);
     updateSpacers();
   }
 

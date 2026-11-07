@@ -1,0 +1,10 @@
+---
+title: "Sorte, sucesso e injustiça"
+date: 2026-09-12
+description: "Uma reflexão sobre as injustiças que acompanham o sucesso e o uso da ignorância alheia."
+tags:
+  - filosofia
+  - justiça
+---
+
+Diferentemente da maioria, não vou falar da relação entre sorte e sucesso; pelo contrário, vou falar das pequenas e grandes injustiças que o compõem. Aproveitar-se da ignorância das pessoas seria uma forma de injustiça? Não falo de aproveitar o fato de alguém não saber, mas de aproveitar que essa pessoa é alguém sem saber. Vamos exemplificar: não me refiro a alguém que acha que o preço é 200, sendo que é 100, e por isso eu cobro mais, mas a aproveitar que a maioria das pessoas não sabe nada e vender um humor besta, perpetuando assim a estupidez social. É uma boa análise saber se isso seria injusto ou até mau? Afinal, é como se aproveitar de alguém "deficiente". Você pode argumentar que ela escolheu, mas você pode dizer que, sabendo o que é melhor, ela escolheu a ignorância? Ou ela nunca teve a oportunidade de saber?

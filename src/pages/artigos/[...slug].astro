@@ -14,10 +14,11 @@ interface Props {
 }
 
 const { article } = Astro.props;
-const { Content } = await render(article);
+const { Content, headings } = await render(article);
+const tableOfContents = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
 ---
 
-<BaseLayout title={article.data.title} description={article.data.description}>
+<BaseLayout title={article.data.title} description={article.data.description} wide>
   <article class="post">
     <header class="post-header">
       <a class="back-link icon-link" href="/artigos/"><Icon name="arrow-left" />Todos os textos</a>
@@ -27,16 +28,37 @@ const { Content } = await render(article);
       <time datetime={article.data.date.toISOString()}>{formatDate(article.data.date)}</time>
       <p class="post-author">Por <strong>O Eleito</strong></p>
     </header>
-    <div class="prose"><Content /></div>
-    {article.data.tags.length > 0 && (
-      <footer class="post-footer">
-        <span>Assuntos</span>
-        {article.data.tags.map((tag) => <a href={`/assuntos/${encodeURIComponent(tag)}/`}>{tag}</a>)}
-      </footer>
-    )}
-    <p class="post-contact">
-      Alguma sugestão de melhoria ou quer só conversar? Entre em contato com
-      <a href="mailto:oeleito.blog@gmail.com">oeleito.blog@gmail.com</a>.
-    </p>
+    <div class="post-reading-layout">
+      <div class="post-body">
+        <div class="prose"><Content /></div>
+        {article.data.tags.length > 0 && (
+          <footer class="post-footer">
+            <span>Assuntos</span>
+            {article.data.tags.map((tag) => <a href={`/assuntos/${encodeURIComponent(tag)}/`}>{tag}</a>)}
+          </footer>
+        )}
+        <p class="post-contact">
+          Alguma sugestão de melhoria ou quer só conversar? Entre em contato com{' '}
+          <a href="mailto:oeleito.blog@gmail.com">oeleito.blog@gmail.com</a>.
+        </p>
+      </div>
+      {tableOfContents.length > 0 && (
+        <aside class="post-toc" aria-label="Títulos deste artigo">
+          <p class="eyebrow">Neste artigo</p>
+          <nav aria-label="Índice do artigo">
+            <ol class="toc-list">
+              {tableOfContents.map((heading) => (
+                <li class:list={[`toc-depth-${heading.depth}`]}>
+                  <a href={`#${heading.slug}`} data-heading-id={heading.slug}>{heading.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </aside>
+      )}
+    </div>
   </article>
+  <script>
+    import '../../scripts/toc.ts';
+  </script>
 </BaseLayout>

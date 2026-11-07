@@ -1,0 +1,23 @@
+---
+title: "Filosofia, teologia e artes liberais"
+date: 2026-11-01
+description: "Uma reflexão sobre começar pela filosofia, compreender as artes liberais e chegar às ciências elevadas."
+tags:
+  - filosofia
+  - teologia
+  - educação
+---
+
+A teologia e a filosofia, as duas ciências elevadas, né? O amor ao conhecimento: philos, amor; sophia, sabedoria. E a teologia: theo, Deus; logia, logos, razão, propósito. É o estudo de Deus, é a razão de Deus. Então, é até um pouco contraditório você pensar; é até um pouco sem sentido você começar a estudar pela teologia. Não é crítica aos catequistas, nem à forma, nem nada do tipo, mas não começar por uma questão um pouco mais básica. Eu nem digo básica das ciências liberais, das artes liberais; isso seria mais papel da escola e papel de vocês, né, de estudar. Mas eu falo sobre a questão da filosofia.
+
+Se você só sabe o quê das coisas e não sabe o porquê, você é um decorador; você não é uma pessoa que está raciocinando, não é uma pessoa que está aprendendo, porque, se você não sabe dizer por que algo é daquele jeito, você só decorou o que é, você não sabe o porquê ele é. Então, você não sabe aquilo, você não tem domínio. Aristóteles, que foi a pessoa que organizou tudo o que a gente conhece hoje sistematicamente, foi Aristóteles quem criou — não todo o sistema de tudo o que há no mundo —, mas ele foi o primeiro a criar uma sistematização do aprendizado, uma sistematização da educação.
+
+Nós vemos o estudo da... O que é liberdade? O que é ser livre? Como tudo começou? Eu notei, pelo que disseram na última aula, que há uma parte, um desinteresse, de certa forma, sobre os assuntos que a gente está explicando aqui na catequese, na crisma, em que tem gente que já está no segundo ano da crisma e ainda não entendeu a importância disso aqui, e isso ocasionou toda aquela situação da semana passada, em que foi dito: "Ah, quem não tem interesse, desista". Mas não desista porque você é incapaz; é um "desista" porque, para estar aqui, você tem que ter um nível de conhecimento ou, pelo menos, um nível de vontade. Afinal, a gente não está começando pela matéria básica.
+
+Teologia é uma das chamadas ciências elevadas, que é diferente das sete artes liberais. O que é arte? Como vocês entendem o que é arte? Arte significa técnica. Ela vem do grego *techne*. Então, arte liberal é a técnica que liberta. Quais são essas? São a gramática. Elas são separadas em dois grupos, o trivium e o quadrivium, que são os três, as três da linguagem e os quatro da lógica, eu acho. São o quê? A gramática é uma delas. Vamos falar primeiro do trivium, que é a gramática, a lógica e a retórica. A lógica pode ser chamada de lógica ou dialética, e a retórica. O quadrivium é formado pela aritmética, geometria, música e astronomia.
+
+Então, o trivium é mais ligado à arte da linguagem, do pensamento. Como vocês podem ver, gramática, dialética e retórica são tudo sobre texto, tudo sobre fala, tudo sobre pessoal. Já o quadrivium é sobre números, sobre o universo, sobre, de certa forma, uma lógica mais precisa. Ninguém pensa em termos matemáticos para formar uma frase, né? É até um pouco petição de princípio partir desse ponto. Enfim.
+
+Quando nós estudamos, alguns de vocês já ouviram falar da academia de Platão. O que estava escrito na academia de Platão, não é? "Não aceitamos ignorantes em geometria". Não era literalmente isso, mas era uma frase, era um mito muito, né? É muito conhecido. Mas isso nos faz refletir o seguinte: se até numa escola de 2.200 anos atrás, 2.300 anos atrás, havia essa necessidade de domínio básico de matérias fundamentais para o estudo da filosofia, quanto mais o da teologia.
+
+Afinal, como eu disse, tem as artes liberais que eu expliquei, as sete, e tem as ciências elevadas. Quais são as ciências elevadas? Essas são fáceis de saber porque são só duas: biologia, por exemplo, que iniciou com obras assim que tratavam da natureza. O estudo da ética, Aristóteles que deu esse nome que conheço, o nome que conheço, o termo "ética", né, com seu livro *Ética a Nicômaco*, muito conhecido também. Ele também fala da natureza com seu livro *A Física*. Não só isso, como ele fala daquilo que vai além da natureza, além da *physis*, o *meta physis*, a metafísica, muito conhecida também. Então, existe uma necessidade desse

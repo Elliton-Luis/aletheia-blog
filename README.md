@@ -4,6 +4,8 @@ Blog pessoal estático feito com Astro. Os artigos vivem em `src/content/article
 
 O arquivo `/artigos/` permite filtrar publicações por período. Ao rolar, ele acrescenta os próximos textos e retira os mais distantes da tela, preservando a posição de leitura. O botão **Tema** alterna entre claro e escuro e guarda a preferência neste navegador.
 
+Os artigos e as páginas de assunto são agrupados por mês. Em cada artigo, o índice lateral acompanha os títulos das seções. O arquivo-fonte `src/content/articles/example.md` fica fora da coleção publicada; seus textos foram separados em artigos próprios.
+
 ## Começar
 
 O projeto inclui o runtime Node.js 22.23.4 como dependência local para que os comandos Astro usem a versão compatível mesmo se o Node global estiver um pouco desatualizado. Para builds na Vercel, configure Node.js 22.23.4 ou mais recente.

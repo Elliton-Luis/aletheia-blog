@@ -1,14 +1,16 @@
 ---
 import '../styles/global.css';
+import '@fontsource-variable/literata/opsz.css';
 import Icon from '../components/Icon.astro';
 import BrandLogo from '../components/BrandLogo.astro';
 
 interface Props {
   title: string;
   description?: string;
+  wide?: boolean;
 }
 
-const { title, description = 'Um espaço pessoal para registrar ideias, leituras e descobertas.' } = Astro.props;
+const { title, description = 'Um espaço pessoal para registrar ideias, leituras e descobertas.', wide = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
@@ -53,7 +55,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         </nav>
       </div>
     </header>
-    <main id="conteudo" class="page-shell">
+    <main id="conteudo" class:list={['page-shell', wide && 'page-shell-wide']}>
       <slot />
     </main>
     <footer class="site-footer">
