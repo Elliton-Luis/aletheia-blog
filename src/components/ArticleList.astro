@@ -1,6 +1,6 @@
 ---
 import type { Article } from '../utils/articles';
-import { articlePath } from '../utils/articles';
+import { articlePath, classify } from '../utils/articles';
 import Icon from './Icon.astro';
 
 interface Props {
@@ -19,13 +19,15 @@ const rows = articles.map((article, index) => {
   const day = date.getUTCDate();
   const monthShort = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' }).format(date).replace('.', '');
 
-  return { article, monthKey, monthName, year: monthDate.getUTCFullYear(), day, monthShort, startsMonth: monthKey !== previousMonth };
+  const category = classify(article);
+
+  return { article, category, monthKey, monthName, year: monthDate.getUTCFullYear(), day, monthShort, startsMonth: monthKey !== previousMonth };
 });
 ---
 
 {articles.length ? (
   <ol class="article-list">
-    {rows.map(({ article, monthKey, monthName, year, day, monthShort, startsMonth }) => (
+    {rows.map(({ article, category, monthKey, monthName, year, day, monthShort, startsMonth }) => (
       <li class:list={['article-row', startsMonth && 'month-start']} data-month={monthKey}>
         {startsMonth && (
           <h2 class="month-heading" data-month={monthKey}>
@@ -39,6 +41,7 @@ const rows = articles.map((article, index) => {
             <span class="article-mon" aria-hidden="true">{monthShort}</span>
           </time>
           <div class="article-summary">
+            <span class="article-class" title={category.title}>{category.name} · {category.formatted} caracteres · {category.minutes} min de leitura</span>
             <h3>{article.data.title}</h3>
             <p>{article.data.description}</p>
           </div>

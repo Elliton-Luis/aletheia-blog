@@ -100,8 +100,11 @@ h1 em { color: var(--muted); font-weight: 400; }
 .article-day { font-size: 3rem; font-weight: 500; letter-spacing: -.05em; }
 .article-mon { margin-top: .4rem; font-family: var(--sans); font-size: .76rem; font-weight: 650; letter-spacing: .22em; text-indent: .22em; text-transform: uppercase; }
 .article-main-link:hover .article-date { color: var(--ink); }
-.article-summary h3 { margin: -.1rem 0 .35rem; font-size: clamp(1.35rem, 2vw, 1.7rem); transition: color .15s ease; }
+.article-summary h3 { margin: 0 0 .35rem; font-size: clamp(1.35rem, 2vw, 1.7rem); transition: color .15s ease; }
 .article-summary p { max-width: 44rem; margin: 0; color: var(--muted); font-size: 1.02rem; }
+.article-class { display: block; margin-bottom: .45rem; color: var(--accent); font-size: .74rem; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; }
+.post-class { margin: 0 0 .2rem; color: var(--accent); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; }
+.post-class strong { font-weight: 650; }
 .tag-list { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: .6rem 0 0 6.1rem; padding: 0; list-style: none; }
 .tag-list a { color: var(--accent); font-size: .88rem; text-decoration: none; }
 .empty-note { padding: 1.5rem 0; color: var(--muted); border-top: 1px solid var(--line); }

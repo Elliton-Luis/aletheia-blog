@@ -1,0 +1,19 @@
+---
+title: "O valor da etimologia"
+date: 2026-09-08
+description: "Uma reflexão sobre o valor do conhecimento acerca da origem das palavras"
+tags:
+  - filosofia
+  - palavras
+---
+
+Uma breve analise do poder que é conhecer a origem das palavras
+
+## Conceito
+
+Nada mais coerente num texto sobre etimologia do que analisar: O que é etimologia?
+Etimologia vem do grego etimos(verdade) e logos(saber, razão, palavra), significa conhecer a verdade daquela palavra, seu significado, não confundir com morfologia morfo(forma) e novamente o logos que indica a função estrutural e linguistica daquela palavra.
+
+## Importância
+
+Ao conhecer a origem das palavras você consegue deduzir o significado de palavras desconhecidas, o que é algo interessante, mas saber a origem das palavras lhe permite conhecer histórias que você nunca saberia, estudar a história das palavras é importantissima também, afinal, somente dessa forma você descobriria que Tchau e Escravo significam a mesma coisa. Adeus(Ad Deus - Para Deus).
