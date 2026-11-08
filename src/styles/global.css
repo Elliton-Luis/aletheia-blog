@@ -174,6 +174,11 @@ h1 em { color: var(--muted); font-weight: 400; }
 .prose pre { overflow-x: auto; margin: 1.8rem 0; padding: .8rem 1rem; background: var(--paper-raised); border: 0; border-left: 2px solid var(--line); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .82rem; line-height: 1.65; }
 .prose :not(pre) > code { padding: .08em .18em; background: var(--paper-raised); border: 0; border-bottom: 1px solid var(--line); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .83em; }
 .prose hr { margin: 2.5rem auto; width: 3rem; border: 0; border-top: 1px solid var(--accent); }
+.prose table { width: 100%; margin: 0 0 1.8em; border-collapse: collapse; font-size: .9em; }
+.prose th, .prose td { padding: .55em .85em; border-bottom: 1px solid var(--line); text-align: left; }
+.prose thead th { border-bottom: 2px solid var(--line); font-weight: 650; }
+.prose .task-list-item { margin-left: -1.4em; list-style: none; }
+.prose .task-list-item input { margin-right: .5em; }
 .post-footer { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .9rem; }
 .post-footer span { color: var(--muted); }
 .post-footer a { color: var(--accent); text-decoration: none; }
@@ -285,6 +290,7 @@ h1 em { color: var(--muted); font-weight: 400; }
   .prose blockquote { color: #333; border-width: 1px; border-color: #999 !important; }
   .prose pre { overflow: visible; white-space: pre-wrap; overflow-wrap: anywhere; background: #f6f3ed; border-color: #bbb; font-size: 9pt; }
   .prose img { max-height: 22cm; object-fit: contain; }
+  .prose th, .prose td { border-color: #aaa69c; }
   a, .article-main-link, .post-footer a { color: #171714 !important; text-decoration: none !important; }
   .article-row { padding: .8rem 0; border-color: #aaa69c; background: transparent !important; }
   .post-header time { color: #444; font-size: 9pt; }
