@@ -1,7 +1,7 @@
 ---
 title: "Verdade e mentira social"
 date: 2026-10-18
-description: "Uma reflexão sobre mudar o que se pensa para produzir um efeito e sobre os limites entre verdade e convenção social."
+description: "Os limites entre verdade e convenção social."
 tags:
   - filosofia
   - verdade
@@ -9,7 +9,7 @@ tags:
 
 ## Pensar uma coisa e dizer outra
 
-Eu tenho um problema: não consigo ser falso. Para mim, pensar X e dizer Y porque vai ter tal efeito é falso, é manipulação. E, se eu falo dessa forma, todo mundo concorda comigo; agora, se eu falo que isso é gracejo social, todo mundo vai dizer que eu estou falando besteira, que é soft skill. Eu não vejo como pensar algo e falar outro não é mentir: uma mentira sem maldade intrínseca, mas ainda assim é mentira.
+Eu tenho um problema: não consigo ser falso. Para mim, pensar X e dizer Y, somente para que alguém faça algo que eu quero, é falsidade e manipulação. E, se eu falo dessa forma, todo mundo concordaria comigo; agora, se eu omito essa ultima parte, ou mudo o contexto para vendas ou favores, todo mundo vai dizer que eu estou falando besteira, que é soft skill. Eu não vejo como pensar algo e falar outro não é mentir: uma mentira sem maldade intrínseca, mas ainda assim é mentira.
 
 ## Tom e grau
 
