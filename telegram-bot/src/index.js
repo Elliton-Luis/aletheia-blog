@@ -589,16 +589,15 @@ async function listPosts(env) {
     .sort();
 }
 
-// Maior prefixo numérico (N.nome.md) já usado na pasta, mais um — igual ao
+// Pega os 4 primeiros caracteres do último artigo e soma 1 — igual ao
 // scripts/criar-ensaio.sh local.
 async function nextNumber(env) {
   const paths = await listPosts(env);
-  let max = 0;
-  for (const p of paths) {
-    const m = fileName(p).match(/^(\d+)\./);
-    if (m) max = Math.max(max, Number(m[1]));
-  }
-  return max + 1;
+  if (!paths.length) return 1;
+  const lastName = fileName(paths[paths.length - 1]);
+  const prefix = lastName.slice(0, 4);
+  const num = parseInt(prefix, 10);
+  return isNaN(num) ? 1 : num + 1;
 }
 
 async function getFile(env, path) {
