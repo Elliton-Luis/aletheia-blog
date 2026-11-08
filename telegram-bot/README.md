@@ -20,6 +20,7 @@ o conteúdo dos ensaios segue as mesmas regras.
 /editar     — busca um ensaio e altera
 /listar     — busca um ensaio só para ler
 /deletar    — busca um ensaio e agenda a exclusão (20 minutos)
+/rascunhos  — retoma um ensaio salvo com /rascunho (durante o /escrever)
 /link       — manda o link do site
 /cancelar   — desiste do que estiver em andamento (inclusive uma exclusão agendada)
 ```
@@ -31,16 +32,19 @@ recusar publicar um ensaio sem `title`/`date`/`description`, porque isso
 quebraria o build (`astro check`) do blog.
 
 Depois de publicar ou atualizar um ensaio, o bot manda a mensagem de
-confirmação na hora e, ~30 segundos depois (tempo aproximado para a Vercel
-terminar o deploy), manda o link do ensaio no ar. Isso só funciona com
-`SITE_URL` preenchido no `wrangler.toml`.
+confirmação na hora e depois confirma de verdade que o deploy terminou: espera
+um tempo inicial e tenta abrir a página do ensaio algumas vezes, com timeout em
+cada tentativa, até ela responder. Se confirmar, manda o link; se não
+confirmar depois de uns minutos, avisa que não conseguiu confirmar (pode ser
+só demora, ou algo deu errado) em vez de mandar um link que talvez ainda não
+funcione. Isso só funciona com `SITE_URL` preenchido no `wrangler.toml`.
 
 ### `/criar`
 
 Duas formas:
 
 - **Mandar um arquivo `.md`:** se já tem `title`, `date` e `description` no frontmatter, publica na hora — só escolhe o número certo do arquivo (`N.nome.md`). Se faltar algum desses campos, o bot avisa o que falta e pede para corrigir e mandar de novo.
-- **`/escrever`** (depois de `/criar`): o bot pergunta, em sequência, **título**, **descrição**, **tags** (manda `-` para usar o padrão `filosofia`) e se quer **fixar** (`pinned`, manda `-` para não). Depois disso, escreva o ensaio à vontade — pode mandar quantas mensagens quiser, o bot só acumula em silêncio. Quando terminar, mande **`/end`** (sozinho, ou no fim da última mensagem, tipo "...e com isso concluímos o artigo /end") — isso publica o ensaio.
+- **`/escrever`** (depois de `/criar`): o bot pergunta, em sequência, **título**, **descrição**, **tags** (manda `-` para usar o padrão `filosofia`) e se quer **fixar** (`pinned`, manda `-` para não). Depois disso, escreva o ensaio à vontade — pode mandar quantas mensagens quiser, o bot só acumula em silêncio. Quando terminar, mande **`/end`** (sozinho, ou no fim da última mensagem, tipo "...e com isso concluímos o artigo /end") — isso publica o ensaio. Se quiser parar no meio e continuar outra hora, mande **`/rascunho`** em vez de `/end` — ele salva o que você já escreveu (até 30 dias) e você retoma depois com `/rascunhos`.
 
 A data é sempre a de hoje; para mudar depois, use `/editar`.
 
@@ -53,6 +57,10 @@ Os dois buscam do mesmo jeito: `/editar` lista todos os ensaios paginados de 10 
   - **`/reescrever`** — substitui o ensaio inteiro pelo que você mandou (precisa vir com o frontmatter completo).
   - **`/colar`** — acrescenta o que você mandou no fim do ensaio original, como um apêndice (não mexe no frontmatter).
 
+  Sem mexer no texto, também dá para só alterar o cabeçalho:
+  - **`/pin`** — liga ou desliga `pinned` (alterna; não precisa mandar conteúdo antes).
+  - **`/tag nome-da-tag`** — adiciona a tag se o ensaio ainda não tiver, remove se já tiver.
+
 ### `/deletar`
 
 Mesma busca de `/editar`/`/listar`. Ao escolher um ensaio, ele **não** é apagado na hora — fica marcado para apagar daqui a **20 minutos**, e o bot avisa. Se mudar de ideia nesse meio tempo, mande **`/cancelar`**, que desfaz a exclusão agendada (e qualquer outra sessão em andamento). Passados os 20 minutos, um Cron Trigger da Cloudflare (roda a cada minuto, configurado em `wrangler.toml`) executa a exclusão de verdade no GitHub e avisa quando terminar.
@@ -60,6 +68,10 @@ Mesma busca de `/editar`/`/listar`. Ao escolher um ensaio, ele **não** é apaga
 ### `/link`
 
 Manda o endereço do site (o `SITE_URL` do `wrangler.toml`). Sem configurar `SITE_URL`, ele avisa que falta configurar.
+
+### `/rascunho` e `/rascunhos`
+
+`/rascunho` só existe durante o `/escrever` (veja acima) — salva o que você já escreveu, sem publicar, por até 30 dias. `/rascunhos` lista os rascunhos salvos; ao escolher um, o bot retoma exatamente de onde parou (mesmo título/descrição/tags/pinned, e o texto que já tinha).
 
 Fora do escopo por enquanto (dá pra adicionar depois): subpastas, imagens.
 
@@ -124,6 +136,7 @@ curl -X POST "https://api.telegram.org/bot<TELEGRAM_TOKEN>/setMyCommands" \
     {"command":"editar","description":"Buscar e editar um ensaio"},
     {"command":"listar","description":"Buscar um ensaio para ler"},
     {"command":"deletar","description":"Buscar um ensaio e agendar exclusão"},
+    {"command":"rascunhos","description":"Retomar um rascunho salvo"},
     {"command":"link","description":"Link do site"},
     {"command":"cancelar","description":"Desistir do que estiver em andamento"}
   ]}'

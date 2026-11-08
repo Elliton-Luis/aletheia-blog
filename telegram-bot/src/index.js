@@ -9,16 +9,25 @@
 // (astro check) do blog.
 
 const AJUDA = `/criar — novo ensaio (manda um .md pra publicar direto, ou /escrever pra montar aqui no chat)
-/editar — busca um ensaio pra alterar
+/editar — busca um ensaio pra alterar (dentro dele: /reescrever, /colar, /pin, /tag nome-da-tag)
 /listar — busca um ensaio só pra ler
 /deletar — busca um ensaio pra apagar (some em 20 minutos; dá tempo de /cancelar)
+/rascunhos — retoma um ensaio salvo com /rascunho (durante o /escrever)
 /link — manda o link do site
 /cancelar — desiste do que estiver em andamento (inclusive uma exclusão agendada)`;
 
 const VINTE_MINUTOS = 20 * 60 * 1000;
+const TRINTA_DIAS = 60 * 60 * 24 * 30;
 
 const POR_PAGINA = 10;
 const LIMITE_TEXTO = 3500; // margem abaixo do limite de 4096 do Telegram
+
+// Confirmação de que o deploy terminou: espera um tempo inicial e depois
+// tenta algumas vezes, com timeout, antes de desistir e só avisar o link.
+const LINK_ESPERA_INICIAL = 20_000;
+const LINK_TENTATIVAS = 6;
+const LINK_INTERVALO = 15_000;
+const LINK_TIMEOUT = 8_000;
 
 export default {
   async fetch(request, env, ctx) {
@@ -77,6 +86,7 @@ async function handleUpdate(update, env) {
   if (text?.startsWith("/deletar")) {
     return startBusca(env, chatId, text.replace("/deletar", "").trim().toLowerCase(), "deletar");
   }
+  if (text === "/rascunhos") return listarRascunhos(env, chatId);
 
   const session = await env.KV.get(sessionKey(chatId), "json");
   if (session) return handleSessionMessage(env, chatId, session, msg, text);
@@ -110,6 +120,7 @@ async function handleCallback(cq, env) {
     if (!path) return send(env, chatId, "A lista expirou. Busque de novo.");
     if (list.acao === "listar") return sendForReading(env, chatId, path);
     if (list.acao === "deletar") return scheduleDelete(env, chatId, path);
+    if (list.acao === "rascunho") return resumeDraft(env, chatId, path);
     return sendForEditing(env, chatId, path);
   }
 }
@@ -174,13 +185,21 @@ async function handleCabecalho(env, chatId, session, text) {
         return finalizeNewPost(env, chatId, header.title, buildMarkdown(header, session.bodyPronto));
       }
       await saveSession(env, chatId, { mode: "escrevendo", ...header, body: "" });
-      return send(env, chatId, "Pode escrever o ensaio. Quando terminar, mande /end.");
+      return send(env, chatId, "Pode escrever o ensaio. Quando terminar, mande /end. Se quiser parar no meio e continuar depois, mande /rascunho.");
     }
   }
 }
 
 async function handleEscrevendo(env, chatId, session, msg, text) {
-  if (!text) return send(env, chatId, "Nesta etapa eu só aceito texto. Para terminar, mande /end.");
+  if (text === "/rascunho") {
+    if (!session.body?.trim()) return send(env, chatId, "Ainda não tem nada escrito para salvar. Escreva algo, ou /cancelar.");
+    const draftKey = `draft:${chatId}:${slugify(session.title)}`;
+    await env.KV.put(draftKey, JSON.stringify(session), { expirationTtl: TRINTA_DIAS });
+    await env.KV.delete(sessionKey(chatId));
+    return send(env, chatId, `📝 Rascunho salvo: "${session.title}". Use /rascunhos pra continuar depois.`);
+  }
+
+  if (!text) return send(env, chatId, "Nesta etapa eu só aceito texto. Para terminar, mande /end (ou /rascunho pra salvar sem publicar).");
 
   const fimNoFinal = text.match(/\/end\s*$/);
   const ehFim = text === "/end" || Boolean(fimNoFinal);
@@ -284,6 +303,34 @@ async function cancelarExclusoesPendentes(env, chatId) {
   return canceladas;
 }
 
+// =====================================================================
+// /rascunho (salvo durante o /escrever) e /rascunhos (retomar)
+// =====================================================================
+
+async function listarRascunhos(env, chatId) {
+  const lista = await env.KV.list({ prefix: `draft:${chatId}:` });
+  if (!lista.keys.length) return send(env, chatId, "Nenhum rascunho salvo.");
+
+  const itens = [];
+  for (const key of lista.keys) {
+    const draft = await env.KV.get(key.name, "json");
+    if (draft) itens.push({ key: key.name, title: draft.title });
+  }
+  if (!itens.length) return send(env, chatId, "Nenhum rascunho salvo.");
+
+  await env.KV.put(listKey(chatId), JSON.stringify({ paths: itens.map((i) => i.key), acao: "rascunho" }), { expirationTtl: 3600 });
+  const rows = itens.map((item, i) => [{ text: item.title.slice(0, 60), callback_data: `ed:${i}` }]);
+  await tg(env, "sendMessage", { chat_id: chatId, text: `📝 Rascunhos salvos (${itens.length}):`, reply_markup: { inline_keyboard: rows } });
+}
+
+async function resumeDraft(env, chatId, draftKey) {
+  const draft = await env.KV.get(draftKey, "json");
+  if (!draft) return send(env, chatId, "Esse rascunho não existe mais.");
+  await env.KV.delete(draftKey);
+  await saveSession(env, chatId, draft);
+  await send(env, chatId, `📝 Retomando "${draft.title}". Continue escrevendo; /end pra publicar, ou /rascunho pra salvar de novo.`);
+}
+
 // Chamado pelo Cron Trigger (a cada minuto). Apaga só o que já venceu.
 async function processarExclusoesPendentes(env) {
   const lista = await env.KV.list({ prefix: "delete:" });
@@ -348,7 +395,7 @@ async function sendForEditing(env, chatId, path) {
   await sendContent(
     env,
     chatId,
-    `✏️ ${path}\n\nEdite e mande de volta (texto ou arquivo). Depois use /reescrever (substitui tudo) ou /colar (acrescenta no fim). /cancelar para desistir.`,
+    `✏️ ${path}\n\nEdite e mande de volta (texto ou arquivo). Depois use /reescrever (substitui tudo) ou /colar (acrescenta no fim).\nOu, sem mexer no texto: /pin (liga/desliga fixado) ou /tag nome-da-tag (adiciona/remove).\n/cancelar para desistir.`,
     file.text,
   );
 }
@@ -358,28 +405,69 @@ async function handleEditando(env, chatId, session, msg, text) {
     if (!session.pendente) {
       return send(env, chatId, "Mande o conteúdo editado antes (texto ou arquivo), depois use /reescrever ou /colar.");
     }
-
     const novo = text === "/reescrever" ? session.pendente : `${session.original.trim()}\n\n${session.pendente.trim()}\n`;
-    const problemas = validateFrontmatter(novo);
-    if (problemas.length) {
-      return send(env, chatId, `⚠️ Não publiquei: faltou ${problemas.join(", ")} no frontmatter. Corrija e mande de novo.`);
-    }
+    return commitEdit(env, chatId, session, novo);
+  }
 
-    try {
-      await commitFile(env, session.path, novo, `revisão: ${fileName(session.path)}`, session.sha);
-      await env.KV.delete(sessionKey(chatId));
-      await send(env, chatId, `✅ ${session.path} atualizado.\nO deploy na Vercel deve começar em instantes.`);
-      await avisarLink(env, chatId, slugFromPath(session.path));
-    } catch (e) {
-      await send(env, chatId, `Erro ao publicar: ${e.message}`);
-    }
-    return;
+  if (text === "/pin" || text?.startsWith("/tag")) {
+    return handlePinOuTag(env, chatId, session, text);
   }
 
   // Chegou um conteúdo novo (texto ou arquivo): guarda como pendente, aguardando /reescrever ou /colar.
   const conteudo = msg.document ? normalize(await downloadFile(env, msg.document.file_id)) : text;
   if (!conteudo) return send(env, chatId, "Mande o texto editado, ou um arquivo .md, e depois /reescrever ou /colar.");
   await saveSession(env, chatId, { ...session, pendente: conteudo });
+}
+
+// /pin: alterna pinned. /tag nome-da-tag: adiciona a tag se não tiver, remove
+// se já tiver. Os dois agem no frontmatter sem você precisar reescrever o
+// arquivo inteiro.
+async function handlePinOuTag(env, chatId, session, text) {
+  const atual = session.pendente ?? session.original;
+  const { data: fm, body } = parseFrontmatter(atual);
+  if (!fm) return send(env, chatId, "Não encontrei o frontmatter desse ensaio para alterar.");
+
+  const title = extractField(fm, "title");
+  const date = extractField(fm, "date");
+  const description = extractField(fm, "description");
+  let tags = extractTags(fm);
+  let pinned = extractPinned(fm);
+  let resumo;
+
+  if (text === "/pin") {
+    pinned = !pinned;
+    resumo = pinned ? "fixado" : "desafixado";
+  } else {
+    const tag = text.replace(/^\/tag/, "").trim().toLowerCase();
+    if (!tag) return send(env, chatId, "Use /tag nome-da-tag.");
+    if (tags.includes(tag)) {
+      tags = tags.filter((t) => t !== tag);
+      resumo = `tag "${tag}" removida`;
+    } else {
+      tags = [...tags, tag];
+      resumo = `tag "${tag}" adicionada`;
+    }
+  }
+
+  const novo = buildMarkdown({ title, date, description, tags, pinned }, body);
+  return commitEdit(env, chatId, session, novo, resumo);
+}
+
+// Usado por /reescrever, /colar, /pin e /tag — um único caminho pra validar,
+// commitar, avisar e checar o deploy.
+async function commitEdit(env, chatId, session, novo, resumo = "") {
+  const problemas = validateFrontmatter(novo);
+  if (problemas.length) {
+    return send(env, chatId, `⚠️ Não publiquei: faltou ${problemas.join(", ")} no frontmatter.`);
+  }
+  try {
+    await commitFile(env, session.path, novo, `revisão: ${fileName(session.path)}`, session.sha);
+    await env.KV.delete(sessionKey(chatId));
+    await send(env, chatId, `✅ ${session.path} atualizado${resumo ? ` (${resumo})` : ""}.\nO deploy na Vercel deve começar em instantes.`);
+    await avisarLink(env, chatId, slugFromPath(session.path));
+  } catch (e) {
+    await send(env, chatId, `Erro ao publicar: ${e.message}`);
+  }
 }
 
 // Manda como mensagem de texto quando cabe; como arquivo .md quando é grande
@@ -431,6 +519,20 @@ function extractField(fm, name) {
   const m = fm.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
   if (!m) return null;
   return m[1].trim().replace(/^["']|["']$/g, "") || null;
+}
+
+function extractTags(fm) {
+  const m = fm.match(/^tags:\s*\n((?:[ \t]*-[ \t]*.+\n?)*)/m);
+  if (!m) return [];
+  return m[1]
+    .split("\n")
+    .map((line) => line.replace(/^[ \t]*-[ \t]*/, "").trim())
+    .filter(Boolean);
+}
+
+function extractPinned(fm) {
+  const m = fm.match(/^pinned:\s*(true|false)\s*$/m);
+  return m ? m[1] === "true" : false;
 }
 
 // title, date e description são obrigatórios no schema do blog (content.config.ts).
@@ -568,13 +670,41 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Espera ~30s (aproximação pro deploy da Vercel terminar) e manda o link do
-// ensaio publicado. Só roda se SITE_URL estiver configurado.
+// Espera o deploy da Vercel e confirma de verdade: dá um tempo inicial e
+// depois tenta buscar a página algumas vezes, com timeout em cada tentativa.
+// Se nunca responder 200, avisa que não confirmou (pode ser só demora, ou
+// algo deu errado) em vez de mandar o link sem checar nada.
+// Só roda se SITE_URL estiver configurado.
 async function avisarLink(env, chatId, slug) {
   if (!env.SITE_URL) return;
-  await delay(30_000);
-  const base = env.SITE_URL.replace(/\/$/, "");
-  await send(env, chatId, `🔗 ${base}/ensaios/${slug}/`);
+  const url = `${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slug}/`;
+
+  await delay(LINK_ESPERA_INICIAL);
+  for (let tentativa = 1; tentativa <= LINK_TENTATIVAS; tentativa++) {
+    if (await urlNoAr(url, LINK_TIMEOUT)) {
+      return send(env, chatId, `🔗 Está no ar: ${url}`);
+    }
+    if (tentativa < LINK_TENTATIVAS) await delay(LINK_INTERVALO);
+  }
+
+  await send(
+    env,
+    chatId,
+    `⚠️ Não consegui confirmar que ficou no ar: ${url}\nPode ser só demora do deploy — dá uma olhada manualmente daqui a pouco.`,
+  );
+}
+
+async function urlNoAr(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { redirect: "follow", signal: controller.signal });
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function slugify(s) {
