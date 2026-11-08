@@ -168,6 +168,7 @@ h1 em { color: var(--muted); font-weight: 400; }
 .prose p, .prose ul, .prose ol { margin: 0 0 1.35em; }
 .prose ul, .prose ol { padding-left: 1.4em; }
 .prose li { padding-left: .25em; margin: .3em 0; }
+.prose em { font-style: italic; font-weight: 560; }
 .prose blockquote { margin: 2em 0; padding: .2em 0 .2em 1.2em; color: var(--muted); border-left: 2px solid var(--accent); font-style: italic; }
 .prose blockquote p:last-child { margin-bottom: 0; }
 .prose img { display: block; max-width: 100%; height: auto; margin: 2rem auto; }
