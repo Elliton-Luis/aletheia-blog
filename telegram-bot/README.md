@@ -39,17 +39,16 @@ confirmar depois de uns minutos, avisa que não conseguiu confirmar (pode ser
 só demora, ou algo deu errado) em vez de mandar um link que talvez ainda não
 funcione. Isso só funciona com `SITE_URL` preenchido no `wrangler.toml`.
 
-### Análise Editorial com IA (NVIDIA Build / Workers AI)
+### Análise Editorial com Duas IAs (IA A e IA B)
 
-Antes de qualquer publicação no blog, a IA atua como um assistente editorial:
+Antes de qualquer publicação no blog, o bot consulta **duas IAs independentes** em paralelo para trazer pontos de vista diferentes:
 
-- **Análise Automática Pré-Postagem:** Ao enviar um `.md` ou finalizar com `/end`, o bot analisa o ensaio e devolve um relatório completo contendo:
-  - 📊 **Visão Geral:** Tese central e tom.
-  - 💡 **Clareza e Argumentação:** Coerência lógica e sugestões de desenvolvimento.
-  - ✍️ **Revisão Textual:** Ortografia, pontuação e concordância.
-  - ✨ **Sugestões para o Blog:** Propostas de subtítulos (`##`) e citações de destaque.
-- **Confirmação:** O relatório é acompanhado de botões para confirmar (`✅ Publicar no Blog`) ou desistir (`🗑️ Cancelar`). Você também pode continuar mandando mensagens para refinar o texto antes de postar.
-- **Comando `/revisar`:** Disponível a qualquer momento durante `/escrever` ou `/editar` para consultar a IA sob demanda.
+- **Visão Neutra e Comparativa:** Os pareceres chegam como `🤖 Opinião da IA A` e `🤖 Opinião da IA B`, sem indicar quais modelos foram chamados, permitindo avaliar sugestões sem viés de marca.
+- **Apenas Sugestões:** A IA atua como leitor crítico e conselheiro editorial — ela aponta reflexões, ambiguidades e sugestões de estilo, mas a decisão final é 100% do autor.
+- **Confirmação Pré-Postagem:** Ao mandar `/end` ou enviar um `.md`, você recebe as duas opiniões e os botões:
+  - `[ ✅ Publicar no Blog ]` ➔ Confirma e commita no GitHub.
+  - `[ 🗑️ Cancelar ]` ➔ Desiste ou continua ajustando o texto.
+- **Comando `/revisar`:** Disponível a qualquer momento durante `/escrever` ou `/editar` para consultar as duas IAs sob demanda.
 
 ### Áudio e Transcrição (Whisper AI)
 

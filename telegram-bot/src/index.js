@@ -261,10 +261,8 @@ async function handleEscrevendo(env, chatId, session, msg, text) {
   // Análise editorial sob demanda durante a escrita
   if (text === "/revisar" || text === "/analisar") {
     if (!session.body?.trim()) return send(env, chatId, "Escreva algo no ensaio antes de pedir a revisão.");
-    await send(env, chatId, "🔍 Analisando seu ensaio com IA...");
     try {
-      const relatorio = await analisarTexto(env, session.title, session.body);
-      await sendContent(env, chatId, relatorio, "");
+      await enviarRelatoriosDuplos(env, chatId, session.title, session.body);
       return send(env, chatId, "💡 Pode continuar escrevendo ou ajustando. Quando estiver pronto para publicar, mande /end.");
     } catch (e) {
       return send(env, chatId, `⚠️ Não foi possível obter a análise da IA: ${e.message}`);
@@ -319,31 +317,29 @@ function buildMarkdown({ title, date, description, tags, pinned }, body) {
 }
 
 // =====================================================================
-// IA: Análise Editorial (NVIDIA Build com fallback para Workers AI)
+// IA: Análise Editorial Dupla (IA A e IA B)
 // =====================================================================
 
-const PROMPT_REVISAO = `Você é o revisor editorial e assistente filosófico do blog Aletheia.
-Sua missão é ler o ensaio e fornecer um relatório conciso, elegante e altamente útil antes da publicação.
+const PROMPT_REVISAO = `Você é um leitor crítico e conselheiro editorial do blog Aletheia.
+Sua função NÃO é ter a resposta final, ditar regras ou reescrever o texto no seu estilo; a voz, o estilo e todas as decisões pertencem exclusivamente ao autor.
+Sua missão é apenas oferecer perspectivas, reflexões construtivas e apontar possíveis ambiguidades para reflexão do autor.
 
-Estruture sua resposta com as seguintes seções (use emojis e títulos claros):
+Estruture sua resposta de forma concisa e elegante com as seguintes seções (use emojis):
 
-📊 Visão Geral
-(1 ou 2 frases sobre a tese central e o tom do texto)
+💡 Reflexões e Argumentação
+(Pontos fortes da tese e aspectos que poderiam ser mais claros, aprofundados ou que levantam dúvidas/ambiguidades)
 
-💡 Clareza e Argumentação
-(Pontos fortes da lógica apresentada e eventuais passagens que poderiam ser mais claras ou desenvolvidas)
+✍️ Apontamentos Textuais
+(Sugestões pontuais sobre ritmo, fluidez ou pequenos deslizes gramaticais/pontuação — sempre em tom de sugestão opcional)
 
-✍️ Revisão Textual e Ortográfica
-(Apontar se há erros de pontuação, concordância ou palavras repetidas. Se estiver tudo certo, diga que está impecável)
+✨ Sugestões para o Autor
+- Sugestão de divisão em subtítulos (##) se ajudar na organização visual
+- Uma frase marcante do texto que se destaca
 
-✨ Sugestões para o Blog
-- Sugestão de subtítulos (##) se o texto estiver em bloco único
-- Uma frase marcante do texto que funcionaria como destaque ou citação
+Responda em português, de forma concisa e respeitosa.`;
 
-Mantenha o tom respeitoso, construtivo e direto ao ponto. Responda em português.`;
-
-async function analisarTexto(env, title, body) {
-  // 1. Tenta a API do NVIDIA Build se a chave estiver configurada
+// IA A: NVIDIA Nemotron 70B (com fallback para Llama 3.3 70B)
+async function consultarIaA(env, title, body) {
   if (env.NVIDIA_API_KEY) {
     try {
       const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
@@ -358,23 +354,19 @@ async function analisarTexto(env, title, body) {
             { role: "system", content: PROMPT_REVISAO },
             { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
           ],
-          temperature: 0.2,
-          max_tokens: 1500,
+          temperature: 0.3,
+          max_tokens: 1200,
         }),
       });
       if (res.ok) {
         const data = await res.json();
-        const texto = data.choices?.[0]?.message?.content;
-        if (texto) return `🤖 Análise Editorial (NVIDIA Nemotron 70B):\n\n${texto}`;
-      } else {
-        console.warn(`NVIDIA API retornou status ${res.status}, acionando fallback local...`);
+        const texto = data.choices?.[0]?.message?.content?.trim();
+        if (texto) return texto;
       }
-    } catch (e) {
-      console.warn("Erro ao conectar à NVIDIA API:", e.message);
-    }
+    } catch {}
   }
 
-  // 2. Fallback de alta qualidade: Cloudflare Workers AI (Llama 3.3 70B / Llama 3.1)
+  // Fallback: Llama 3.3 70B
   if (env.AI) {
     try {
       const res = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
@@ -382,23 +374,86 @@ async function analisarTexto(env, title, body) {
           { role: "system", content: PROMPT_REVISAO },
           { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
         ],
-        max_tokens: 1500,
+        max_tokens: 1200,
       });
-      if (res?.response) return `🤖 Análise Editorial (Llama 3.3 70B):\n\n${res.response}`;
-    } catch (errLlama) {
-      console.warn("Llama 3.3 falhou, tentando Llama 3.1 8B:", errLlama);
-      const res = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-        messages: [
-          { role: "system", content: PROMPT_REVISAO },
-          { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
-        ],
-        max_tokens: 1500,
-      });
-      if (res?.response) return `🤖 Análise Editorial (Llama 3.1 8B):\n\n${res.response}`;
-    }
+      if (res?.response) return res.response.trim();
+    } catch {}
   }
 
-  throw new Error("Nenhum serviço de IA disponível para análise.");
+  return null;
+}
+
+// IA B: Família de modelo alternativa (Qwen / Mistral / Llama 3.1)
+async function consultarIaB(env, title, body) {
+  if (!env.AI) return null;
+
+  // 1. Tenta Qwen 2.5 72B (modelo de outra família, excelente em português)
+  try {
+    const res = await env.AI.run("@cf/qwen/qwen2.5-72b-instruct", {
+      messages: [
+        { role: "system", content: PROMPT_REVISAO },
+        { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+      ],
+      max_tokens: 1200,
+    });
+    if (res?.response) return res.response.trim();
+  } catch {}
+
+  // 2. Fallback: Mistral 7B
+  try {
+    const res = await env.AI.run("@cf/mistral/mistral-7b-instruct-v0.2", {
+      messages: [
+        { role: "system", content: PROMPT_REVISAO },
+        { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+      ],
+      max_tokens: 1200,
+    });
+    if (res?.response) return res.response.trim();
+  } catch {}
+
+  // 3. Fallback: Llama 3.1 8B
+  try {
+    const res = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+      messages: [
+        { role: "system", content: PROMPT_REVISAO },
+        { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+      ],
+      max_tokens: 1200,
+    });
+    if (res?.response) return res.response.trim();
+  } catch {}
+
+  return null;
+}
+
+async function enviarRelatoriosDuplos(env, chatId, title, body) {
+  await send(env, chatId, "🔍 Consultando duas IAs independentes (IA A e IA B) para trazer visões diferentes...");
+
+  const [resA, resB] = await Promise.allSettled([
+    consultarIaA(env, title, body),
+    consultarIaB(env, title, body),
+  ]);
+
+  const textoA = resA.status === "fulfilled" ? resA.value : null;
+  const textoB = resB.status === "fulfilled" ? resB.value : null;
+
+  if (!textoA && !textoB) {
+    throw new Error("Não foi possível obter resposta das IAs no momento.");
+  }
+
+  if (textoA) {
+    await sendContent(env, chatId, "🤖 Opinião da IA A:", textoA);
+  }
+
+  if (textoB) {
+    await sendContent(env, chatId, "🤖 Opinião da IA B:", textoB);
+  }
+
+  await send(
+    env,
+    chatId,
+    "📌 Lembrete: As observações acima são apenas sugestões e pontos de vista para sua reflexão. A decisão e a palavra final sobre o ensaio são sempre suas.",
+  );
 }
 
 async function prepararRevisaoEConfirmacao(env, chatId, header, body, markdown) {
@@ -415,12 +470,10 @@ async function prepararRevisaoEConfirmacao(env, chatId, header, body, markdown) 
     markdown,
   });
 
-  await send(env, chatId, "🔍 Analisando seu ensaio com IA antes da postagem...");
   try {
-    const relatorio = await analisarTexto(env, header.title, body);
-    await sendContent(env, chatId, relatorio, "");
+    await enviarRelatoriosDuplos(env, chatId, header.title, body);
   } catch (e) {
-    await send(env, chatId, `⚠️ Não foi possível obter a análise da IA (${e.message}), mas você ainda pode publicar.`);
+    await send(env, chatId, `⚠️ Não foi possível obter as análises da IA (${e.message}), mas você ainda pode publicar.`);
   }
 
   return tg(env, "sendMessage", {
@@ -627,10 +680,9 @@ async function handleEditando(env, chatId, session, msg, text) {
     const alvo = session.pendente ?? session.original;
     const { data: fm, body } = parseFrontmatter(alvo);
     const titulo = fm ? extractField(fm, "title") : fileName(session.path);
-    await send(env, chatId, "🔍 Analisando seu ensaio com IA...");
     try {
-      const relatorio = await analisarTexto(env, titulo || "Ensaio", body || alvo);
-      return sendContent(env, chatId, relatorio, "");
+      await enviarRelatoriosDuplos(env, chatId, titulo || "Ensaio", body || alvo);
+      return send(env, chatId, "💡 Agora use /colar (adiciona ao fim) ou /reescrever (substitui tudo).");
     } catch (e) {
       return send(env, chatId, `⚠️ Não foi possível obter a análise da IA: ${e.message}`);
     }
