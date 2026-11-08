@@ -23,7 +23,7 @@ npm run dev
 npm run criar:ensaio --nome "Conhecimento e inteligência"
 ```
 
-Isso cria um arquivo `.md` em `src/content/articles/`, já com o próximo número da sequência (ex.: `8.conhecimento-e-inteligencia.md`) e o frontmatter básico preenchido. O número organiza a pasta, mas não aparece na URL: o endereço usa só o nome, por exemplo `/ensaios/conhecimento-e-inteligencia/`. Para manter um endereço já publicado, não altere a parte do nome depois de criado.
+Isso cria um arquivo `.md` em `src/content/articles/`, já com o próximo número da sequência (ex.: `08.conhecimento-e-inteligencia.md`) e o frontmatter básico preenchido. O número organiza a pasta, mas não aparece na URL: o endereço usa só o nome, por exemplo `/ensaios/conhecimento-e-inteligencia/`. Para manter um endereço já publicado, não altere a parte do nome depois de criado.
 
 Veja o [guia de Markdown](docs/guia-markdown.md) para os campos do frontmatter e a formatação do texto, e o [guia de comandos](docs/guia-comandos.md) para build, preview e commit.
 
