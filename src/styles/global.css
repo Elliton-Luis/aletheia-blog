@@ -190,7 +190,10 @@ h1 em { color: var(--muted); font-weight: 400; }
 .not-found { max-width: 100%; padding: clamp(6rem, 18vw, 12rem) 0; }
 .not-found > p:not(.eyebrow) { margin: 1.2rem 0 1.5rem; color: var(--muted); }
 .site-footer { border-top: 1px solid var(--line); }
-.footer-inner { min-height: 5rem; flex-wrap: wrap; justify-content: center; gap: .5rem 1.25rem; padding-block: .8rem; color: var(--muted); font-size: .82rem; }
+.footer-inner { min-height: 5rem; flex-wrap: wrap; justify-content: flex-end; text-align: right; gap: .6rem 0; padding-block: .8rem; color: var(--muted); font-size: .82rem; }
+.footer-inner > * { position: relative; }
+.footer-inner > * + * { margin-left: 1.1rem; padding-left: 1.1rem; border-left: 1px solid var(--line); }
+.footer-tagline { font-family: var(--serif); font-style: italic; }
 .footer-credit { color: var(--accent); font-variant: small-caps; letter-spacing: .04em; }
 .contact-email { overflow-wrap: anywhere; }
 .about-contact { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
@@ -214,6 +217,8 @@ h1 em { color: var(--muted); font-weight: 400; }
 @media (max-width: 600px) {
   .header-inner, .footer-inner { width: min(100% - 2rem, 56rem); }
   .header-inner { min-height: 4.5rem; flex-wrap: wrap; justify-content: center; gap: .35rem 1.2rem; padding: .65rem 0; }
+  .footer-inner { justify-content: center; text-align: center; }
+  .footer-inner > * + * { margin-left: 0; padding-left: 0; border-left: 0; }
   .wordmark { font-size: 1.35rem; }
   .brand-mark { width: 1.6rem; height: 1.6rem; }
   nav { flex-wrap: wrap; justify-content: center; gap: .4rem .75rem; }
