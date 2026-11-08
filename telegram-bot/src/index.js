@@ -206,6 +206,7 @@ async function finalizeNewPost(env, chatId, title, markdown) {
     await commitFile(env, path, markdown, `novo: ${fileName(path)}`);
     await env.KV.delete(sessionKey(chatId));
     await send(env, chatId, `✅ Publicado em ${path}\nO deploy na Vercel deve começar em instantes.`);
+    await avisarLink(env, chatId, slug);
   } catch (e) {
     await send(env, chatId, `Erro ao publicar: ${e.message}`);
   }
@@ -293,6 +294,7 @@ async function handleEditando(env, chatId, session, msg, text) {
       await commitFile(env, session.path, novo, `revisão: ${fileName(session.path)}`, session.sha);
       await env.KV.delete(sessionKey(chatId));
       await send(env, chatId, `✅ ${session.path} atualizado.\nO deploy na Vercel deve começar em instantes.`);
+      await avisarLink(env, chatId, slugFromPath(session.path));
     } catch (e) {
       await send(env, chatId, `Erro ao publicar: ${e.message}`);
     }
@@ -473,6 +475,25 @@ function normalize(s) {
 
 function fileName(path) {
   return path.split("/").pop();
+}
+
+// O endereço do ensaio usa só o nome, sem o número — igual ao generateId do
+// content.config.ts do blog (ex.: "8.nome.md" -> "nome").
+function slugFromPath(path) {
+  return fileName(path).replace(/\.md$/i, "").replace(/^\d+\./, "");
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Espera ~30s (aproximação pro deploy da Vercel terminar) e manda o link do
+// ensaio publicado. Só roda se SITE_URL estiver configurado.
+async function avisarLink(env, chatId, slug) {
+  if (!env.SITE_URL) return;
+  await delay(30_000);
+  const base = env.SITE_URL.replace(/\/$/, "");
+  await send(env, chatId, `🔗 ${base}/ensaios/${slug}/`);
 }
 
 function slugify(s) {

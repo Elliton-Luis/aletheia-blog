@@ -7,6 +7,7 @@ ALLOWED_USER_ID = "9047800237"   # pegue com o @userinfobot
 GITHUB_REPO = "Elliton-Luis/aletheia-blog"          # dono/repositório
 GITHUB_BRANCH = "main"
 CONTENT_PATH = "src/content/articles"               # pasta dos ensaios no repo do blog
+SITE_URL = "COLE_AQUI_A_URL_DO_SITE"                # ex.: https://aletheia-blog.vercel.app (sem / no fim)
 
 [[kv_namespaces]]
 binding = "KV"

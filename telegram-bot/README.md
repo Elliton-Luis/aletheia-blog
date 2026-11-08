@@ -28,6 +28,11 @@ O próprio comando que você manda (`/end`, `/reescrever`, `/colar`, ou mandar o
 recusar publicar um ensaio sem `title`/`date`/`description`, porque isso
 quebraria o build (`astro check`) do blog.
 
+Depois de publicar ou atualizar um ensaio, o bot manda a mensagem de
+confirmação na hora e, ~30 segundos depois (tempo aproximado para a Vercel
+terminar o deploy), manda o link do ensaio no ar. Isso só funciona com
+`SITE_URL` preenchido no `wrangler.toml`.
+
 ### `/criar`
 
 Duas formas:
@@ -75,7 +80,7 @@ npx wrangler login
 npx wrangler kv namespace create KV
 ```
 
-Cole o `id` que aparecer no campo `id` de `[[kv_namespaces]]` em `wrangler.toml`. No mesmo arquivo, troque `ALLOWED_USER_ID` pelo seu ID do Telegram (os campos `GITHUB_REPO`, `GITHUB_BRANCH` e `CONTENT_PATH` já estão certos para este projeto).
+Cole o `id` que aparecer no campo `id` de `[[kv_namespaces]]` em `wrangler.toml`. No mesmo arquivo, troque `ALLOWED_USER_ID` pelo seu ID do Telegram e `SITE_URL` pelo endereço do site publicado (ex.: `https://aletheia-blog.vercel.app`, sem `/` no fim) — os campos `GITHUB_REPO`, `GITHUB_BRANCH` e `CONTENT_PATH` já estão certos para este projeto.
 
 ### 3. Segredos
 
