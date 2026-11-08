@@ -1,22 +1,20 @@
 // Bot do Telegram para criar e editar ensaios do blog Aletheia pelo celular.
 // Roda num Cloudflare Worker (grátis). O PC não participa de nada disso.
 //
-// Arquitetura (igual à ideia original): Telegram -> Worker -> GitHub (API) -> Vercel (deploy automático).
-// Adaptado a este projeto: pasta src/content/articles, frontmatter com
-// title/date/description/tags/pinned, numeração automática dos arquivos
-// (N.nome.md, como o scripts/criar-ensaio.sh já faz) e validação do
-// frontmatter antes de qualquer commit, para nunca mandar pro ar um ensaio
-// que quebre o build (astro check) por faltar um campo obrigatório.
+// Fluxo: /criar, /editar, /listar. Tudo é direto — não existe uma etapa
+// genérica de "confirmar antes de publicar": o gatilho de publicar É o
+// comando que você manda (/end, /reescrever, /colar, ou o próprio arquivo
+// .md completo em /criar). A única trava automática é não deixar publicar
+// um ensaio sem title/date/description, porque isso quebraria o build
+// (astro check) do blog.
 
-const AJUDA = `📝 Ensaio novo: mande um arquivo .md.
-   • Com frontmatter completo (title, date, description): publica como está, só ajusto a numeração do arquivo.
-   • Sem frontmatter: uso o primeiro "# Título" e a data de hoje, e te pergunto a descrição.
-✏️ Editar ensaio: /editar lista os ensaios, /editar palavra filtra pelo nome. Mando o arquivo, você edita no celular e manda de volta.
+const AJUDA = `/criar — novo ensaio (manda um .md pra publicar direto, ou /escrever pra montar aqui no chat)
+/editar — busca um ensaio pra alterar
+/listar — busca um ensaio só pra ler
+/cancelar — desiste do que estiver em andamento`;
 
-Antes de qualquer commit você vê uma prévia e confirma.
-/cancelar desiste do que estiver em andamento.`;
-
-const POR_PAGINA = 8;
+const POR_PAGINA = 10;
+const LIMITE_TEXTO = 3500; // margem abaixo do limite de 4096 do Telegram
 
 export default {
   async fetch(request, env, ctx) {
@@ -28,17 +26,14 @@ export default {
     }
 
     const update = await request.json();
-    // Responde 200 na hora e processa em segundo plano
     ctx.waitUntil(handleUpdate(update, env).catch((err) => console.error(err)));
     return new Response("ok");
   },
 };
 
 // =====================================================================
-// Mensagens
+// Roteamento
 // =====================================================================
-
-class PostError extends Error {}
 
 async function handleUpdate(update, env) {
   if (update.callback_query) return handleCallback(update.callback_query, env);
@@ -51,67 +46,25 @@ async function handleUpdate(update, env) {
   const chatId = msg.chat.id;
   const text = msg.text?.trim();
 
+  // Comandos globais: sempre interrompem o que estiver em andamento
   if (text === "/start" || text === "/ajuda") return send(env, chatId, AJUDA);
-
   if (text === "/cancelar") {
     await env.KV.delete(sessionKey(chatId));
     return send(env, chatId, "🗑️ Cancelado.");
   }
-
+  if (text === "/criar") return startCriar(env, chatId);
   if (text?.startsWith("/editar")) {
-    const termo = text.replace("/editar", "").trim().toLowerCase();
-    return startEditList(env, chatId, termo);
+    return startBusca(env, chatId, text.replace("/editar", "").trim().toLowerCase(), "editar");
+  }
+  if (text?.startsWith("/listar")) {
+    return startBusca(env, chatId, text.replace("/listar", "").trim().toLowerCase(), "listar");
   }
 
   const session = await env.KV.get(sessionKey(chatId), "json");
+  if (session) return handleSessionMessage(env, chatId, session, msg, text);
 
-  // Esperando a descrição de um ensaio novo sem frontmatter
-  if (session?.mode === "awaiting-description") {
-    if (!text) return send(env, chatId, "Preciso de uma frase curta para a descrição, ou /cancelar.");
-    const markdown = buildMarkdown(session.title, session.date, text, session.body);
-    const post = { mode: "new", title: session.title, path: session.path, markdown };
-    await saveSession(env, chatId, post);
-    return sendNewPreview(env, chatId, post);
-  }
-
-  // Esperando o arquivo editado: só aceita documento
-  if (session?.mode === "editing" || session?.mode === "edit-ready") {
-    if (!msg.document) {
-      return send(env, chatId, `Estou esperando o arquivo editado de ${session.path}.\nMande o .md ou use /cancelar.`);
-    }
-    const content = normalize(await downloadFile(env, msg.document.file_id));
-    return receiveEdit(env, chatId, session, content);
-  }
-
-  // Caso contrário: ensaio novo (só por arquivo — texto solto não vira ensaio)
-  if (!msg.document) {
-    if (text) return send(env, chatId, "Para criar um ensaio, mande um arquivo .md. Veja /ajuda.");
-    return;
-  }
-  const filename = msg.document.file_name || "";
-  if (!/\.md$/i.test(filename)) return send(env, chatId, "Mande um arquivo .md.");
-  const content = await downloadFile(env, msg.document.file_id);
-
-  let post;
-  try {
-    post = await prepareNewPost(content, env);
-  } catch (e) {
-    if (e instanceof PostError) return send(env, chatId, `⚠️ ${e.message}`);
-    throw e;
-  }
-
-  if (post.mode === "awaiting-description") {
-    await saveSession(env, chatId, post);
-    return send(env, chatId, `Preciso de uma descrição curta (uma frase) para "${post.title}". Responda com ela, ou /cancelar.`);
-  }
-
-  await saveSession(env, chatId, post);
-  await sendNewPreview(env, chatId, post);
+  return send(env, chatId, `Não entendi. Comandos:\n\n${AJUDA}`);
 }
-
-// =====================================================================
-// Botões
-// =====================================================================
 
 async function handleCallback(cq, env) {
   const chatId = cq.message.chat.id;
@@ -124,7 +77,7 @@ async function handleCallback(cq, env) {
   if (data.startsWith("pg:")) {
     const page = Number(data.slice(3));
     const list = await env.KV.get(listKey(chatId), "json");
-    if (!list) return send(env, chatId, "A lista expirou. Use /editar de novo.");
+    if (!list) return send(env, chatId, "A lista expirou. Busque de novo.");
     return tg(env, "editMessageReplyMarkup", {
       chat_id: chatId,
       message_id: cq.message.message_id,
@@ -132,106 +85,137 @@ async function handleCallback(cq, env) {
     });
   }
 
-  // Escolheu um ensaio para editar
+  // Escolheu um ensaio na lista (/editar ou /listar)
   if (data.startsWith("ed:")) {
     const list = await env.KV.get(listKey(chatId), "json");
     const path = list?.paths[Number(data.slice(3))];
-    if (!path) return send(env, chatId, "A lista expirou. Use /editar de novo.");
-    return sendFileForEditing(env, chatId, path);
-  }
-
-  if (data === "descartar") {
-    await env.KV.delete(sessionKey(chatId));
-    return send(env, chatId, "🗑️ Descartado.");
-  }
-
-  if (data === "publicar") {
-    const s = await env.KV.get(sessionKey(chatId), "json");
-    if (!s || (s.mode !== "new" && s.mode !== "edit-ready")) {
-      return send(env, chatId, "Não há nada pendente para publicar.");
-    }
-
-    // Última checagem antes de ir pro ar: nunca publicar frontmatter incompleto.
-    const problemas = validateFrontmatter(s.markdown);
-    if (problemas.length) {
-      return send(env, chatId, `⚠️ Isso quebraria o build do site. Faltou no frontmatter: ${problemas.join(", ")}.`);
-    }
-
-    try {
-      if (s.mode === "new") {
-        await commitFile(env, s.path, s.markdown, `novo: ${fileName(s.path)}`);
-        await send(env, chatId, `✅ Publicado em ${s.path}\nO deploy na Vercel deve começar em instantes.`);
-      } else {
-        await commitFile(env, s.path, s.markdown, `revisão: ${fileName(s.path)}`, s.sha);
-        await send(env, chatId, `✅ ${s.path} atualizado.\nO deploy na Vercel deve começar em instantes.`);
-      }
-      await env.KV.delete(sessionKey(chatId));
-    } catch (e) {
-      await send(env, chatId, `Erro ao publicar: ${e.message}`);
-    }
+    if (!path) return send(env, chatId, "A lista expirou. Busque de novo.");
+    if (list.acao === "listar") return sendForReading(env, chatId, path);
+    return sendForEditing(env, chatId, path);
   }
 }
 
 // =====================================================================
-// Ensaio novo
+// /criar
 // =====================================================================
 
-function buildMarkdown(title, date, description, body) {
-  return `---\ntitle: ${JSON.stringify(title)}\ndate: ${date}\ndescription: ${JSON.stringify(description)}\n---\n\n${body}`;
+async function startCriar(env, chatId) {
+  await saveSession(env, chatId, { mode: "novo-escolha" });
+  return send(env, chatId, "Mande um arquivo .md para publicar direto, ou /escrever para montar o ensaio aqui no chat.");
 }
 
-async function prepareNewPost(raw, env) {
-  const md = normalize(raw);
-  const { data: fm, body } = parseFrontmatter(md);
+async function handleNewFromFile(env, chatId, msg) {
+  const filename = msg.document.file_name || "";
+  if (!/\.md$/i.test(filename)) return send(env, chatId, "Mande um arquivo .md.");
+  const raw = normalize(await downloadFile(env, msg.document.file_id));
+  const { data: fm, body } = parseFrontmatter(raw);
 
   if (fm) {
-    // Já tem frontmatter: exige os campos obrigatórios do schema do blog.
     const title = extractField(fm, "title");
     const date = extractField(fm, "date");
     const description = extractField(fm, "description");
     const faltando = [];
     if (!title) faltando.push("title");
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) faltando.push("date (formato AAAA-MM-DD)");
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) faltando.push("date (AAAA-MM-DD)");
     if (!description) faltando.push("description");
     if (faltando.length) {
-      throw new PostError(`Faltou no frontmatter: ${faltando.join(", ")}.\nCorrija o arquivo e mande de novo.`);
+      await env.KV.delete(sessionKey(chatId));
+      return send(env, chatId, `⚠️ Faltou no frontmatter: ${faltando.join(", ")}.\nCorrija o arquivo e mande de novo com /criar.`);
     }
-    const number = await nextNumber(env);
-    const slug = slugify(title);
-    return { mode: "new", title, path: `${env.CONTENT_PATH}/${number}.${slug}.md`, markdown: md };
+    return finalizeNewPost(env, chatId, title, raw);
   }
 
-  // Sem frontmatter: título do primeiro "# Título" (ou "Sem título"), data de
-  // hoje, e a descrição é perguntada depois — não dá pra inventar uma boa.
-  const h1 = body.match(/^#\s+(.+)$/m);
-  const title = h1 ? h1[1].trim() : "Sem título";
-  const bodyWithoutH1 = h1 ? body.replace(h1[0], "").trim() + "\n" : body;
-  const date = new Date().toISOString().slice(0, 10);
+  // Sem frontmatter: pede os campos do cabeçalho, com o corpo do arquivo já pronto.
+  await saveSession(env, chatId, { mode: "cabecalho-title", bodyPronto: body });
+  return send(env, chatId, "Esse arquivo não tem frontmatter. Qual o título do ensaio?");
+}
+
+async function handleCabecalho(env, chatId, session, text) {
+  switch (session.mode) {
+    case "cabecalho-title":
+      if (!text) return send(env, chatId, "Preciso de um texto para o título.");
+      await saveSession(env, chatId, { ...session, mode: "cabecalho-description", title: text });
+      return send(env, chatId, "Descrição (uma frase curta sobre o ensaio):");
+
+    case "cabecalho-description":
+      if (!text) return send(env, chatId, "Preciso de uma frase para a descrição.");
+      await saveSession(env, chatId, { ...session, mode: "cabecalho-tags", description: text });
+      return send(env, chatId, "Tags, separadas por vírgula (ou manda - para usar o padrão: filosofia):");
+
+    case "cabecalho-tags": {
+      const tags = !text || text === "-" ? ["filosofia"] : text.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+      await saveSession(env, chatId, { ...session, mode: "cabecalho-pinned", tags });
+      return send(env, chatId, "Fixar (pinned) este ensaio no topo? Responda sim, ou - para não (padrão):");
+    }
+
+    case "cabecalho-pinned": {
+      const pinned = /^s(im)?$/i.test(text || "");
+      const header = { title: session.title, description: session.description, tags: session.tags, pinned, date: today() };
+      if (session.bodyPronto !== undefined) {
+        return finalizeNewPost(env, chatId, header.title, buildMarkdown(header, session.bodyPronto));
+      }
+      await saveSession(env, chatId, { mode: "escrevendo", ...header, body: "" });
+      return send(env, chatId, "Pode escrever o ensaio. Quando terminar, mande /end.");
+    }
+  }
+}
+
+async function handleEscrevendo(env, chatId, session, msg, text) {
+  if (!text) return send(env, chatId, "Nesta etapa eu só aceito texto. Para terminar, mande /end.");
+
+  const fimNoFinal = text.match(/\/end\s*$/);
+  const ehFim = text === "/end" || Boolean(fimNoFinal);
+  const pedaco = text === "/end" ? "" : fimNoFinal ? text.slice(0, fimNoFinal.index).trim() : text;
+
+  if (!ehFim) {
+    const body = session.body ? `${session.body}\n\n${pedaco}` : pedaco;
+    await saveSession(env, chatId, { ...session, body });
+    return; // acumula em silêncio — pode mandar quantas mensagens quiser
+  }
+
+  const body = pedaco ? (session.body ? `${session.body}\n\n${pedaco}` : pedaco) : session.body;
+  if (!body?.trim()) return send(env, chatId, "O ensaio ficou sem texto. Escreva algo antes do /end, ou /cancelar.");
+
+  const header = { title: session.title, date: session.date, description: session.description, tags: session.tags, pinned: session.pinned };
+  return finalizeNewPost(env, chatId, header.title, buildMarkdown(header, body));
+}
+
+function buildMarkdown({ title, date, description, tags, pinned }, body) {
+  const lines = ["---", `title: ${JSON.stringify(title)}`, `date: ${date}`, `description: ${JSON.stringify(description)}`];
+  if (tags?.length) {
+    lines.push("tags:");
+    for (const tag of tags) lines.push(`  - ${tag}`);
+  }
+  if (pinned) lines.push("pinned: true");
+  lines.push("---", "", body.trim(), "");
+  return lines.join("\n");
+}
+
+async function finalizeNewPost(env, chatId, title, markdown) {
+  const problemas = validateFrontmatter(markdown);
+  if (problemas.length) {
+    await env.KV.delete(sessionKey(chatId));
+    return send(env, chatId, `⚠️ Não publiquei: faltou ${problemas.join(", ")} no frontmatter.`);
+  }
+
   const number = await nextNumber(env);
   const slug = slugify(title);
-  return {
-    mode: "awaiting-description",
-    title,
-    date,
-    body: bodyWithoutH1,
-    path: `${env.CONTENT_PATH}/${number}.${slug}.md`,
-  };
-}
+  const path = `${env.CONTENT_PATH}/${number}.${slug}.md`;
 
-async function sendNewPreview(env, chatId, post) {
-  const body = post.markdown.length > 1500 ? post.markdown.slice(0, 1500) + "\n[…]" : post.markdown;
-  await tg(env, "sendMessage", {
-    chat_id: chatId,
-    text: `📝 Ensaio novo: ${post.title}\n📄 ${post.path}\n\n${body}`,
-    reply_markup: confirmKeyboard(),
-  });
+  try {
+    await commitFile(env, path, markdown, `novo: ${fileName(path)}`);
+    await env.KV.delete(sessionKey(chatId));
+    await send(env, chatId, `✅ Publicado em ${path}\nO deploy na Vercel deve começar em instantes.`);
+  } catch (e) {
+    await send(env, chatId, `Erro ao publicar: ${e.message}`);
+  }
 }
 
 // =====================================================================
-// Edição de ensaio existente
+// /editar e /listar (mesma busca, ações diferentes)
 // =====================================================================
 
-async function startEditList(env, chatId, termo) {
+async function startBusca(env, chatId, termo, acao) {
   let paths;
   try {
     paths = await listPosts(env);
@@ -241,12 +225,13 @@ async function startEditList(env, chatId, termo) {
   if (termo) paths = paths.filter((p) => fileName(p).toLowerCase().includes(termo));
   if (!paths.length) return send(env, chatId, "Nenhum ensaio encontrado.");
 
-  // Guarda a lista por 1 hora para os botões poderem se referir a ela pelo número
-  await env.KV.put(listKey(chatId), JSON.stringify({ paths }), { expirationTtl: 3600 });
+  await env.KV.put(listKey(chatId), JSON.stringify({ paths, acao }), { expirationTtl: 3600 });
 
+  const rotulo = acao === "editar" ? "editar" : "ler";
+  const emoji = acao === "editar" ? "✏️" : "🔎";
   await tg(env, "sendMessage", {
     chat_id: chatId,
-    text: `✏️ Qual ensaio você quer editar? (${paths.length} encontrado${paths.length > 1 ? "s" : ""})`,
+    text: `${emoji} Qual ensaio você quer ${rotulo}? (${paths.length} encontrado${paths.length > 1 ? "s" : ""})`,
     reply_markup: listKeyboard(paths, 0),
   });
 }
@@ -263,7 +248,17 @@ function listKeyboard(paths, page) {
   return { inline_keyboard: rows };
 }
 
-async function sendFileForEditing(env, chatId, path) {
+async function sendForReading(env, chatId, path) {
+  let file;
+  try {
+    file = await getFile(env, path);
+  } catch (e) {
+    return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
+  }
+  await sendContent(env, chatId, `🔎 ${path}`, file.text);
+}
+
+async function sendForEditing(env, chatId, path) {
   let file;
   try {
     file = await getFile(env, path);
@@ -273,56 +268,76 @@ async function sendFileForEditing(env, chatId, path) {
 
   // O sha identifica a versão exata que você baixou (evita sobrescrever uma
   // edição feita pelo PC enquanto você editava pelo celular).
-  await saveSession(env, chatId, { mode: "editing", path, sha: file.sha, original: file.text });
+  await saveSession(env, chatId, { mode: "editando", path, sha: file.sha, original: file.text });
+  await sendContent(
+    env,
+    chatId,
+    `✏️ ${path}\n\nEdite e mande de volta (texto ou arquivo). Depois use /reescrever (substitui tudo) ou /colar (acrescenta no fim). /cancelar para desistir.`,
+    file.text,
+  );
+}
 
+async function handleEditando(env, chatId, session, msg, text) {
+  if (text === "/reescrever" || text === "/colar") {
+    if (!session.pendente) {
+      return send(env, chatId, "Mande o conteúdo editado antes (texto ou arquivo), depois use /reescrever ou /colar.");
+    }
+
+    const novo = text === "/reescrever" ? session.pendente : `${session.original.trim()}\n\n${session.pendente.trim()}\n`;
+    const problemas = validateFrontmatter(novo);
+    if (problemas.length) {
+      return send(env, chatId, `⚠️ Não publiquei: faltou ${problemas.join(", ")} no frontmatter. Corrija e mande de novo.`);
+    }
+
+    try {
+      await commitFile(env, session.path, novo, `revisão: ${fileName(session.path)}`, session.sha);
+      await env.KV.delete(sessionKey(chatId));
+      await send(env, chatId, `✅ ${session.path} atualizado.\nO deploy na Vercel deve começar em instantes.`);
+    } catch (e) {
+      await send(env, chatId, `Erro ao publicar: ${e.message}`);
+    }
+    return;
+  }
+
+  // Chegou um conteúdo novo (texto ou arquivo): guarda como pendente, aguardando /reescrever ou /colar.
+  const conteudo = msg.document ? normalize(await downloadFile(env, msg.document.file_id)) : text;
+  if (!conteudo) return send(env, chatId, "Mande o texto editado, ou um arquivo .md, e depois /reescrever ou /colar.");
+  await saveSession(env, chatId, { ...session, pendente: conteudo });
+}
+
+// Manda como mensagem de texto quando cabe; como arquivo .md quando é grande
+// demais para uma mensagem do Telegram (limite de ~4096 caracteres).
+async function sendContent(env, chatId, cabecalho, texto) {
+  if (texto.length <= LIMITE_TEXTO) {
+    return send(env, chatId, `${cabecalho}\n\n${texto}`);
+  }
   const form = new FormData();
   form.append("chat_id", String(chatId));
-  form.append("caption", `✏️ ${path}\n\nEdite e mande o arquivo de volta aqui. /cancelar para desistir.`);
-  form.append("document", new File([file.text], fileName(path), { type: "text/markdown" }));
+  form.append("caption", `${cabecalho}\n\n(Ensaio grande demais para mensagem de texto — mandei como arquivo.)`);
+  form.append("document", new File([texto], "ensaio.md", { type: "text/markdown" }));
   await fetch(`https://api.telegram.org/bot${env.TELEGRAM_TOKEN}/sendDocument`, { method: "POST", body: form });
 }
 
-async function receiveEdit(env, chatId, session, content) {
-  const problemas = validateFrontmatter(content);
-  if (problemas.length) {
-    return send(env, chatId, `⚠️ Isso quebraria o build do site. Faltou no frontmatter: ${problemas.join(", ")}.\nCorrija e mande o arquivo de novo, ou /cancelar.`);
+// =====================================================================
+// Roteia mensagens para quem está no meio de um fluxo (sessão ativa)
+// =====================================================================
+
+async function handleSessionMessage(env, chatId, session, msg, text) {
+  if (session.mode === "novo-escolha") {
+    if (msg.document) return handleNewFromFile(env, chatId, msg);
+    if (text === "/escrever") {
+      await saveSession(env, chatId, { mode: "cabecalho-title" });
+      return send(env, chatId, "Título do ensaio:");
+    }
+    return send(env, chatId, "Mande um arquivo .md, ou /escrever para montar o ensaio aqui no chat. /cancelar para sair.");
   }
 
-  const { added, removed } = diffLines(session.original, content);
-  if (!added.length && !removed.length) {
-    return send(env, chatId, "Não encontrei nenhuma alteração em relação ao original. Edite e mande de novo, ou /cancelar.");
-  }
+  if (session.mode?.startsWith("cabecalho-")) return handleCabecalho(env, chatId, session, text);
+  if (session.mode === "escrevendo") return handleEscrevendo(env, chatId, session, msg, text);
+  if (session.mode === "editando") return handleEditando(env, chatId, session, msg, text);
 
-  await saveSession(env, chatId, { ...session, mode: "edit-ready", markdown: content });
-
-  const mostra = (lines, sinal) =>
-    lines.slice(0, 12).map((l) => `${sinal} ${l.slice(0, 120)}`).join("\n") +
-    (lines.length > 12 ? `\n${sinal} …mais ${lines.length - 12}` : "");
-
-  let text = `✏️ Atualizar ${session.path}\n➕ ${added.length} linha(s)  ➖ ${removed.length} linha(s)\n`;
-  if (removed.length) text += `\nRemovido:\n${mostra(removed, "−")}\n`;
-  if (added.length) text += `\nAdicionado:\n${mostra(added, "+")}\n`;
-  if (text.length > 3900) text = text.slice(0, 3900) + "\n[…]";
-
-  await tg(env, "sendMessage", { chat_id: chatId, text, reply_markup: confirmKeyboard() });
-}
-
-// Diferença simples: linhas que aparecem a mais em um lado do que no outro.
-// Não é um diff "de verdade" (não percebe reordenação), mas é suficiente para
-// conferir uma edição antes de publicar.
-function diffLines(a, b) {
-  const contar = (arr) => arr.reduce((m, l) => m.set(l, (m.get(l) || 0) + 1), new Map());
-  const A = contar(a.split("\n"));
-  const B = contar(b.split("\n"));
-  const sobras = (lines, outro) => {
-    const usados = new Map();
-    return lines.filter((l) => {
-      const n = (usados.get(l) || 0) + 1;
-      usados.set(l, n);
-      return n > (outro.get(l) || 0) && l.trim() !== "";
-    });
-  };
-  return { added: sobras(b.split("\n"), A), removed: sobras(a.split("\n"), B) };
+  await env.KV.delete(sessionKey(chatId));
+  return send(env, chatId, `Sessão perdida, começando do zero.\n\n${AJUDA}`);
 }
 
 // =====================================================================
@@ -341,8 +356,7 @@ function extractField(fm, name) {
   return m[1].trim().replace(/^["']|["']$/g, "") || null;
 }
 
-// Garante que title, date e description existem e a data está no formato
-// certo — os três são obrigatórios no schema do blog (content.config.ts).
+// title, date e description são obrigatórios no schema do blog (content.config.ts).
 function validateFrontmatter(markdown) {
   const { data } = parseFrontmatter(normalize(markdown));
   if (!data) return ["frontmatter ausente (o arquivo precisa começar e terminar o bloco com `---`)"];
@@ -428,15 +442,6 @@ async function downloadFile(env, fileId) {
   return f.text();
 }
 
-function confirmKeyboard() {
-  return {
-    inline_keyboard: [[
-      { text: "✅ Publicar", callback_data: "publicar" },
-      { text: "🗑️ Descartar", callback_data: "descartar" },
-    ]],
-  };
-}
-
 function tg(env, method, payload) {
   return fetch(`https://api.telegram.org/bot${env.TELEGRAM_TOKEN}/${method}`, {
     method: "POST",
@@ -456,6 +461,10 @@ const listKey = (chatId) => `list:${chatId}`;
 
 function saveSession(env, chatId, data) {
   return env.KV.put(sessionKey(chatId), JSON.stringify(data), { expirationTtl: 60 * 60 * 24 * 7 });
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function normalize(s) {

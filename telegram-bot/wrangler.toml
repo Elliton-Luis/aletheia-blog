@@ -3,11 +3,11 @@ main = "src/index.js"
 compatibility_date = "2025-06-01"
 
 [vars]
-ALLOWED_USER_ID = "COLE_AQUI_SEU_ID_DO_TELEGRAM"   # pegue com o @userinfobot
+ALLOWED_USER_ID = "9047800237"   # pegue com o @userinfobot
 GITHUB_REPO = "Elliton-Luis/aletheia-blog"          # dono/repositório
 GITHUB_BRANCH = "main"
 CONTENT_PATH = "src/content/articles"               # pasta dos ensaios no repo do blog
 
 [[kv_namespaces]]
 binding = "KV"
-id = "COLE_AQUI_O_ID_DO_KV"
+id = "049ded3b0e6348eeb40c04263da04d86"

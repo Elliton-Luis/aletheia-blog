@@ -13,15 +13,40 @@ Veja os dois guias do blog antes de usar: [guia de comandos](../docs/guia-comand
 e [guia de Markdown](../docs/guia-markdown.md) — o bot só automatiza o envio,
 o conteúdo dos ensaios segue as mesmas regras.
 
-## O que ele faz (v1)
+## Comandos
 
-- **Ensaio novo:** mande um arquivo `.md`.
-  - Se já tem frontmatter completo (`title`, `date`, `description`), ele publica como está — só escolhe o número certo do arquivo.
-  - Se não tem frontmatter, ele usa o primeiro `# Título` do texto e a data de hoje, e te pergunta a descrição (não inventa uma).
-- **Editar ensaio:** `/editar` lista os ensaios (ou `/editar palavra` para filtrar). Você escolhe, o bot manda o arquivo, você edita num editor de texto do celular e manda de volta. Ele mostra o que mudou e você confirma.
-- **Nada vai ao ar sem seu toque em "Publicar".** E nada que quebraria o build (`astro check`) é aceito — o bot confere `title`/`date`/`description` antes de qualquer commit.
+```
+/criar      — novo ensaio
+/editar     — busca um ensaio e altera
+/listar     — busca um ensaio só para ler
+/cancelar   — desiste do que estiver em andamento
+```
 
-Fora do escopo por enquanto (dá pra adicionar depois): marcar `pinned`, editar `tags` pelo bot, apagar um ensaio, subpastas, imagens.
+O bot é direto: não existe uma etapa genérica de "confirmar antes de publicar".
+O próprio comando que você manda (`/end`, `/reescrever`, `/colar`, ou mandar o
+`.md` já completo em `/criar`) já publica na hora. A única trava automática é
+recusar publicar um ensaio sem `title`/`date`/`description`, porque isso
+quebraria o build (`astro check`) do blog.
+
+### `/criar`
+
+Duas formas:
+
+- **Mandar um arquivo `.md`:** se já tem `title`, `date` e `description` no frontmatter, publica na hora — só escolhe o número certo do arquivo (`N.nome.md`). Se faltar algum desses campos, o bot avisa o que falta e pede para corrigir e mandar de novo.
+- **`/escrever`** (depois de `/criar`): o bot pergunta, em sequência, **título**, **descrição**, **tags** (manda `-` para usar o padrão `filosofia`) e se quer **fixar** (`pinned`, manda `-` para não). Depois disso, escreva o ensaio à vontade — pode mandar quantas mensagens quiser, o bot só acumula em silêncio. Quando terminar, mande **`/end`** (sozinho, ou no fim da última mensagem, tipo "...e com isso concluímos o artigo /end") — isso publica o ensaio.
+
+A data é sempre a de hoje; para mudar depois, use `/editar`.
+
+### `/editar` e `/listar`
+
+Os dois buscam do mesmo jeito: `/editar` lista todos os ensaios paginados de 10 em 10, ou `/editar palavra` filtra pelo nome do arquivo (`/listar` igual). Você toca no ensaio na lista.
+
+- **`/listar`:** só mostra o conteúdo (como texto, ou como arquivo `.md` se for grande demais para uma mensagem do Telegram — limite de ~4096 caracteres). Não dá para alterar por aqui.
+- **`/editar`:** mostra o conteúdo do mesmo jeito. Copie, edite (no próprio chat ou num editor, tanto faz) e mande de volta — como texto ou como arquivo. Depois, decida o que fazer com o que você mandou:
+  - **`/reescrever`** — substitui o ensaio inteiro pelo que você mandou (precisa vir com o frontmatter completo).
+  - **`/colar`** — acrescenta o que você mandou no fim do ensaio original, como um apêndice (não mexe no frontmatter).
+
+Fora do escopo por enquanto (dá pra adicionar depois): apagar um ensaio, subpastas, imagens.
 
 ## Segurança
 
@@ -74,6 +99,21 @@ curl "https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=<URL_DO_WORKER
 
 Se responder `"ok":true`, está ligado. Mande `/start` para o bot.
 
+### 5. (Opcional) Mostrar os comandos no "/" do Telegram
+
+```sh
+curl -X POST "https://api.telegram.org/bot<TELEGRAM_TOKEN>/setMyCommands" \
+  -H "Content-Type: application/json" \
+  -d '{"commands":[
+    {"command":"criar","description":"Novo ensaio"},
+    {"command":"editar","description":"Buscar e editar um ensaio"},
+    {"command":"listar","description":"Buscar um ensaio para ler"},
+    {"command":"cancelar","description":"Desistir do que estiver em andamento"}
+  ]}'
+```
+
+Isso faz o Telegram sugerir `/criar`, `/editar`, `/listar` e `/cancelar` quando você digita `/` no chat do bot. É cosmético — o bot já aceita esses comandos sem isso, só não aparecem sugeridos.
+
 ### Depurar
 
 ```sh
@@ -86,5 +126,5 @@ Mostra os erros do Worker em tempo real enquanto você usa o bot.
 
 - Só lista arquivos direto em `src/content/articles` (sem subpastas) — igual à estrutura atual do blog.
 - Não abre arquivos acima de 1 MB (nenhum ensaio chega perto disso).
-- O "diff" mostrado antes de publicar uma edição é simples (conta linhas que mudaram, não percebe reordenação) — serve para conferir o essencial, não é um diff completo.
-- `pinned` e `tags` não têm atalho no bot ainda; se o arquivo já os tiver no frontmatter, eles são preservados, mas não há como ligá-los por aqui.
+- Não tem diff/prévia antes de publicar uma edição — `/reescrever` e `/colar` aplicam na hora. A única rede de segurança é a checagem de `title`/`date`/`description`.
+- Não dá para apagar um ensaio pelo bot, nem mexer em subpastas ou imagens.
