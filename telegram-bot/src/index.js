@@ -11,7 +11,11 @@
 const AJUDA = `/criar — novo ensaio (manda um .md pra publicar direto, ou /escrever pra montar aqui no chat)
 /editar — busca um ensaio pra alterar
 /listar — busca um ensaio só pra ler
-/cancelar — desiste do que estiver em andamento`;
+/deletar — busca um ensaio pra apagar (some em 20 minutos; dá tempo de /cancelar)
+/link — manda o link do site
+/cancelar — desiste do que estiver em andamento (inclusive uma exclusão agendada)`;
+
+const VINTE_MINUTOS = 20 * 60 * 1000;
 
 const POR_PAGINA = 10;
 const LIMITE_TEXTO = 3500; // margem abaixo do limite de 4096 do Telegram
@@ -28,6 +32,12 @@ export default {
     const update = await request.json();
     ctx.waitUntil(handleUpdate(update, env).catch((err) => console.error(err)));
     return new Response("ok");
+  },
+
+  // Roda a cada minuto (ver [triggers] no wrangler.toml): executa as
+  // exclusões agendadas pelo /deletar cujos 20 minutos já passaram.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(processarExclusoesPendentes(env).catch((err) => console.error(err)));
   },
 };
 
@@ -50,7 +60,12 @@ async function handleUpdate(update, env) {
   if (text === "/start" || text === "/ajuda") return send(env, chatId, AJUDA);
   if (text === "/cancelar") {
     await env.KV.delete(sessionKey(chatId));
-    return send(env, chatId, "🗑️ Cancelado.");
+    const canceladas = await cancelarExclusoesPendentes(env, chatId);
+    return send(env, chatId, canceladas.length ? `🗑️ Cancelado (inclusive a exclusão de ${canceladas.join(", ")}).` : "🗑️ Cancelado.");
+  }
+  if (text === "/link") {
+    if (!env.SITE_URL) return send(env, chatId, "SITE_URL não está configurado no wrangler.toml.");
+    return send(env, chatId, `🔗 ${env.SITE_URL.replace(/\/$/, "")}/`);
   }
   if (text === "/criar") return startCriar(env, chatId);
   if (text?.startsWith("/editar")) {
@@ -58,6 +73,9 @@ async function handleUpdate(update, env) {
   }
   if (text?.startsWith("/listar")) {
     return startBusca(env, chatId, text.replace("/listar", "").trim().toLowerCase(), "listar");
+  }
+  if (text?.startsWith("/deletar")) {
+    return startBusca(env, chatId, text.replace("/deletar", "").trim().toLowerCase(), "deletar");
   }
 
   const session = await env.KV.get(sessionKey(chatId), "json");
@@ -85,12 +103,13 @@ async function handleCallback(cq, env) {
     });
   }
 
-  // Escolheu um ensaio na lista (/editar ou /listar)
+  // Escolheu um ensaio na lista (/editar, /listar ou /deletar)
   if (data.startsWith("ed:")) {
     const list = await env.KV.get(listKey(chatId), "json");
     const path = list?.paths[Number(data.slice(3))];
     if (!path) return send(env, chatId, "A lista expirou. Busque de novo.");
     if (list.acao === "listar") return sendForReading(env, chatId, path);
+    if (list.acao === "deletar") return scheduleDelete(env, chatId, path);
     return sendForEditing(env, chatId, path);
   }
 }
@@ -228,13 +247,69 @@ async function startBusca(env, chatId, termo, acao) {
 
   await env.KV.put(listKey(chatId), JSON.stringify({ paths, acao }), { expirationTtl: 3600 });
 
-  const rotulo = acao === "editar" ? "editar" : "ler";
-  const emoji = acao === "editar" ? "✏️" : "🔎";
+  const rotulo = { editar: "editar", deletar: "apagar" }[acao] ?? "ler";
+  const emoji = { editar: "✏️", deletar: "🗑️" }[acao] ?? "🔎";
   await tg(env, "sendMessage", {
     chat_id: chatId,
     text: `${emoji} Qual ensaio você quer ${rotulo}? (${paths.length} encontrado${paths.length > 1 ? "s" : ""})`,
     reply_markup: listKeyboard(paths, 0),
   });
+}
+
+// =====================================================================
+// /deletar — a exclusão só acontece 20 minutos depois, pelo Cron Trigger
+// (scheduled()), pra dar tempo de desistir com /cancelar.
+// =====================================================================
+
+function deleteKey(path) {
+  return `delete:${path}`;
+}
+
+async function scheduleDelete(env, chatId, path) {
+  const executeAt = Date.now() + VINTE_MINUTOS;
+  await env.KV.put(deleteKey(path), JSON.stringify({ chatId, path, executeAt }), { expirationTtl: 60 * 30 });
+  await send(env, chatId, `🗑️ ${path} será apagado em 20 minutos.\nMudou de ideia? Mande /cancelar antes disso.`);
+}
+
+async function cancelarExclusoesPendentes(env, chatId) {
+  const lista = await env.KV.list({ prefix: "delete:" });
+  const canceladas = [];
+  for (const key of lista.keys) {
+    const entry = await env.KV.get(key.name, "json");
+    if (entry && String(entry.chatId) === String(chatId)) {
+      await env.KV.delete(key.name);
+      canceladas.push(fileName(entry.path));
+    }
+  }
+  return canceladas;
+}
+
+// Chamado pelo Cron Trigger (a cada minuto). Apaga só o que já venceu.
+async function processarExclusoesPendentes(env) {
+  const lista = await env.KV.list({ prefix: "delete:" });
+  const agora = Date.now();
+
+  for (const key of lista.keys) {
+    const entry = await env.KV.get(key.name, "json");
+    if (!entry) {
+      await env.KV.delete(key.name);
+      continue;
+    }
+    if (entry.executeAt > agora) continue; // ainda não chegou a hora
+
+    try {
+      const file = await getFile(env, entry.path).catch(() => null);
+      if (file) {
+        await deleteFile(env, entry.path, file.sha, `remoção: ${fileName(entry.path)}`);
+        await send(env, entry.chatId, `🗑️ ${entry.path} apagado.\nO deploy na Vercel deve atualizar em instantes.`);
+      } else {
+        await send(env, entry.chatId, `${entry.path} já não existia mais no GitHub — nada para apagar.`);
+      }
+    } catch (e) {
+      await send(env, entry.chatId, `Erro ao apagar ${entry.path}: ${e.message}`);
+    }
+    await env.KV.delete(key.name);
+  }
 }
 
 function listKeyboard(paths, page) {
@@ -430,6 +505,12 @@ async function commitFile(env, path, markdown, message, sha) {
   if (res.status === 422) {
     throw new Error("provavelmente já existe um ensaio com esse nome. Use /editar para alterá-lo.");
   }
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+}
+
+async function deleteFile(env, path, sha, message) {
+  const body = { message, sha, branch: env.GITHUB_BRANCH };
+  const res = await fetch(ghUrl(env, path), { method: "DELETE", headers: ghHeaders(env), body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
 }
 

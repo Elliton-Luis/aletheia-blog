@@ -19,7 +19,9 @@ o conteúdo dos ensaios segue as mesmas regras.
 /criar      — novo ensaio
 /editar     — busca um ensaio e altera
 /listar     — busca um ensaio só para ler
-/cancelar   — desiste do que estiver em andamento
+/deletar    — busca um ensaio e agenda a exclusão (20 minutos)
+/link       — manda o link do site
+/cancelar   — desiste do que estiver em andamento (inclusive uma exclusão agendada)
 ```
 
 O bot é direto: não existe uma etapa genérica de "confirmar antes de publicar".
@@ -51,7 +53,15 @@ Os dois buscam do mesmo jeito: `/editar` lista todos os ensaios paginados de 10 
   - **`/reescrever`** — substitui o ensaio inteiro pelo que você mandou (precisa vir com o frontmatter completo).
   - **`/colar`** — acrescenta o que você mandou no fim do ensaio original, como um apêndice (não mexe no frontmatter).
 
-Fora do escopo por enquanto (dá pra adicionar depois): apagar um ensaio, subpastas, imagens.
+### `/deletar`
+
+Mesma busca de `/editar`/`/listar`. Ao escolher um ensaio, ele **não** é apagado na hora — fica marcado para apagar daqui a **20 minutos**, e o bot avisa. Se mudar de ideia nesse meio tempo, mande **`/cancelar`**, que desfaz a exclusão agendada (e qualquer outra sessão em andamento). Passados os 20 minutos, um Cron Trigger da Cloudflare (roda a cada minuto, configurado em `wrangler.toml`) executa a exclusão de verdade no GitHub e avisa quando terminar.
+
+### `/link`
+
+Manda o endereço do site (o `SITE_URL` do `wrangler.toml`). Sem configurar `SITE_URL`, ele avisa que falta configurar.
+
+Fora do escopo por enquanto (dá pra adicionar depois): subpastas, imagens.
 
 ## Segurança
 
@@ -113,11 +123,13 @@ curl -X POST "https://api.telegram.org/bot<TELEGRAM_TOKEN>/setMyCommands" \
     {"command":"criar","description":"Novo ensaio"},
     {"command":"editar","description":"Buscar e editar um ensaio"},
     {"command":"listar","description":"Buscar um ensaio para ler"},
+    {"command":"deletar","description":"Buscar um ensaio e agendar exclusão"},
+    {"command":"link","description":"Link do site"},
     {"command":"cancelar","description":"Desistir do que estiver em andamento"}
   ]}'
 ```
 
-Isso faz o Telegram sugerir `/criar`, `/editar`, `/listar` e `/cancelar` quando você digita `/` no chat do bot. É cosmético — o bot já aceita esses comandos sem isso, só não aparecem sugeridos.
+Isso faz o Telegram sugerir os comandos quando você digita `/` no chat do bot. É cosmético — o bot já aceita esses comandos sem isso, só não aparecem sugeridos.
 
 ### Depurar
 
@@ -132,4 +144,5 @@ Mostra os erros do Worker em tempo real enquanto você usa o bot.
 - Só lista arquivos direto em `src/content/articles` (sem subpastas) — igual à estrutura atual do blog.
 - Não abre arquivos acima de 1 MB (nenhum ensaio chega perto disso).
 - Não tem diff/prévia antes de publicar uma edição — `/reescrever` e `/colar` aplicam na hora. A única rede de segurança é a checagem de `title`/`date`/`description`.
-- Não dá para apagar um ensaio pelo bot, nem mexer em subpastas ou imagens.
+- Não dá para mexer em subpastas ou imagens pelo bot.
+- A exclusão agendada (`/deletar`) tem precisão de ~1 minuto (o Cron Trigger roda a cada minuto) — "20 minutos" é aproximado, não cravado no segundo.
