@@ -44,6 +44,17 @@ npm run commit:ensaios -- --dry-run # só mostra o que seria commitado, sem comm
 - Só afeta arquivos `.md` dentro de `src/content/articles/`; mudanças em código não entram nesses commits.
 - Ao final, se algo foi commitado, o script já envia para o repositório remoto (`git push`). Se o push falhar, os commits continuam salvos localmente — rode `git push` manualmente depois.
 
+## Trazer ensaios criados em outro lugar (bot do Telegram, GitHub)
+
+```sh
+npm run sync
+```
+
+Busca o que mudou no GitHub e traz para cá com um merge. Use sempre que suspeitar que um ensaio foi criado ou editado fora deste PC (pelo bot do Telegram, ou direto pelo GitHub) — ele avisa se há algo novo, se já está tudo sincronizado, ou se deu conflito (nesse caso, mostra os comandos para resolver).
+
+- Recusa rodar se houver mudanças não commitadas aqui — commite ou descarte antes.
+- Não substitui o `git push`: ele só traz, não manda nada daqui para o GitHub.
+
 ## Git, no dia a dia
 
 ```sh
