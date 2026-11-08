@@ -14,6 +14,11 @@ const articles = newestFirst(await getCollection('articles'));
     <h1>Ensaios</h1>
     <p>Ideias, leituras e descobertas reunidas ao longo do tempo.</p>
   </header>
+  <div class="search-filter" id="search-filter" hidden>
+    <label for="search-text" class="sr-only">Buscar por título, descrição ou assunto</label>
+    <Icon name="search" />
+    <input id="search-text" type="search" placeholder="Buscar por título, descrição ou assunto" autocomplete="off" />
+  </div>
   <section class="archive-controls" aria-label="Filtros do arquivo">
     <form class="date-filter" id="date-filter" hidden>
       <p class="filter-title icon-link"><Icon name="calendar" />Filtrar por período</p>
@@ -35,7 +40,7 @@ const articles = newestFirst(await getCollection('articles'));
     <div class="virtual-sentinel" id="top-sentinel" aria-hidden="true"></div>
     <button class="archive-more archive-previous" id="load-previous" type="button" hidden>Carregar ensaios anteriores</button>
     <ArticleList articles={articles} />
-    <p class="empty-note" id="no-matches" hidden>Nenhum ensaio encontrado nesse período.</p>
+    <p class="empty-note" id="no-matches" hidden>Nenhum ensaio encontrado.</p>
     <div class="virtual-sentinel" id="bottom-sentinel" aria-hidden="true"></div>
     <button class="archive-more" id="load-more" type="button" hidden>Carregar mais ensaios</button>
     <div class="virtual-spacer" id="bottom-spacer" aria-hidden="true" hidden></div>

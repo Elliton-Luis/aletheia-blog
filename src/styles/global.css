@@ -110,6 +110,12 @@ h1 em { color: var(--muted); font-weight: 400; }
 .tag-list { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: .6rem 0 0 6.1rem; padding: 0; list-style: none; }
 .tag-list a { color: var(--accent); font-size: .88rem; text-decoration: none; }
 .empty-note { padding: 1.5rem 0; color: var(--muted); border-top: 1px solid var(--line); }
+.search-filter { display: flex; align-items: center; gap: .6rem; margin: 0 0 1.4rem; padding-bottom: .6rem; border-bottom: 1px solid var(--line); color: var(--muted); }
+.search-filter .interface-icon { width: 1.1rem; height: 1.1rem; flex: none; }
+.search-filter input { flex: 1; min-height: 2.2rem; padding: .2rem 0; border: 0; color: var(--ink); background: transparent; font: inherit; font-size: 1rem; }
+.search-filter input::placeholder { color: var(--muted); }
+.search-filter:focus-within { border-bottom-color: var(--accent); }
+.search-filter:focus-within .interface-icon { color: var(--accent); }
 .archive-controls { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; margin: 0 0 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--line); }
 .date-filter { display: grid; gap: .55rem; }
 .filter-title { margin: 0; color: var(--accent); font-family: var(--serif); font-size: 1rem; }
@@ -250,7 +256,7 @@ h1 em { color: var(--muted); font-weight: 400; }
 
   html, body { width: auto; min-height: 0; color: #171714; background: #fff !important; font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.55; }
   body { -webkit-font-smoothing: grayscale; }
-  .skip-link, nav, .theme-toggle, .archive-controls, .archive-more, .virtual-spacer, .virtual-sentinel, .post-toc { display: none !important; }
+  .skip-link, nav, .theme-toggle, .search-filter, .archive-controls, .archive-more, .virtual-spacer, .virtual-sentinel, .post-toc { display: none !important; }
   .site-header { border-bottom: 1px solid #aaa69c !important; }
   .header-inner { width: 100%; min-height: 0; justify-content: flex-start; padding: 0 0 .45rem; }
   .wordmark { color: #171714 !important; font-size: 19pt; }

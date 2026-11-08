@@ -3,9 +3,16 @@ interface ArchiveEntry {
   date: string;
   month: string;
   height: number;
+  searchText: string;
+}
+
+function normalize(value: string) {
+  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 const list = document.querySelector<HTMLOListElement>('#virtual-archive .article-list');
+const searchFilter = document.querySelector<HTMLElement>('#search-filter');
+const searchInput = document.querySelector<HTMLInputElement>('#search-text');
 const filter = document.querySelector<HTMLFormElement>('#date-filter');
 const dateFrom = document.querySelector<HTMLInputElement>('#date-from');
 const dateTo = document.querySelector<HTMLInputElement>('#date-to');
@@ -20,10 +27,11 @@ const previousButton = document.querySelector<HTMLButtonElement>('#load-previous
 const nextButton = document.querySelector<HTMLButtonElement>('#load-more');
 
 if (
-  list && filter && dateFrom && dateTo && clearDates && count && empty && topSpacer && bottomSpacer &&
-  topSentinel && bottomSentinel && previousButton && nextButton
+  list && searchFilter && searchInput && filter && dateFrom && dateTo && clearDates && count && empty &&
+  topSpacer && bottomSpacer && topSentinel && bottomSentinel && previousButton && nextButton
 ) {
   const articleList = list;
+  const textInput = searchInput;
   const fromInput = dateFrom;
   const toInput = dateTo;
   const archiveCount = count;
@@ -41,11 +49,19 @@ if (
     const heading = row.querySelector<HTMLElement>('.month-heading');
     const cleanRow = row.cloneNode(true) as HTMLLIElement;
     cleanRow.querySelector('.month-heading')?.remove();
+
+    const titleNode = cleanRow.querySelector<HTMLElement>('.article-summary h3')?.cloneNode(true) as HTMLElement | undefined;
+    titleNode?.querySelector('.sr-only')?.remove();
+    const title = titleNode?.textContent ?? '';
+    const description = cleanRow.querySelector<HTMLElement>('.article-summary p')?.textContent ?? '';
+    const tags = Array.from(cleanRow.querySelectorAll<HTMLElement>('.tag-list a')).map((tag) => tag.textContent ?? '');
+
     return {
       html: cleanRow.outerHTML,
       date,
       month: date.slice(0, 7),
       height: Math.ceil(row.getBoundingClientRect().height - (heading?.getBoundingClientRect().height ?? 0)),
+      searchText: normalize([title, description, ...tags].join(' ')),
     };
   });
 
@@ -102,7 +118,7 @@ if (
     noMatches.hidden = filtered.length !== 0;
 
     archiveCount.textContent = filtered.length === 0
-      ? 'Nenhum ensaio neste período.'
+      ? 'Nenhum ensaio encontrado.'
       : `Mostrando ${start + 1}–${end} de ${filtered.length} ${filtered.length === 1 ? 'ensaio' : 'ensaios'}`;
   }
 
@@ -141,10 +157,15 @@ if (
     renderCurrentWindow();
   }
 
-  function applyDateRange() {
+  function applyFilters() {
     const from = fromInput.value;
     const to = toInput.value;
-    filtered = entries.filter((entry) => (!from || entry.date >= from) && (!to || entry.date <= to));
+    const query = normalize(textInput.value);
+    filtered = entries.filter((entry) =>
+      (!from || entry.date >= from) &&
+      (!to || entry.date <= to) &&
+      (!query || entry.searchText.includes(query)),
+    );
     renderWindow();
   }
 
@@ -165,13 +186,14 @@ if (
 
   filter.addEventListener('submit', (event) => {
     event.preventDefault();
-    applyDateRange();
+    applyFilters();
   });
   clearDates.addEventListener('click', () => {
     fromInput.value = '';
     toInput.value = '';
-    applyDateRange();
+    applyFilters();
   });
+  textInput.addEventListener('input', applyFilters);
   buttonPrevious.addEventListener('click', loadPrevious);
   buttonNext.addEventListener('click', loadNext);
   window.addEventListener('beforeprint', prepareForPrint);
@@ -187,6 +209,7 @@ if (
     }, observerOptions).observe(bottomSentinel);
   }
 
+  searchFilter.hidden = false;
   filter.hidden = false;
   archiveCount.hidden = false;
   renderWindow();
