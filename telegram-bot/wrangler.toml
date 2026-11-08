@@ -9,6 +9,9 @@ GITHUB_BRANCH = "main"
 CONTENT_PATH = "src/content/articles"               # pasta dos ensaios no repo do blog
 SITE_URL = "https://blog-aletheia.vercel.app"                # ex.: https://aletheia-blog.vercel.app (sem / no fim)
 
+[ai]
+binding = "AI"
+
 [[kv_namespaces]]
 binding = "KV"
 id = "049ded3b0e6348eeb40c04263da04d86"

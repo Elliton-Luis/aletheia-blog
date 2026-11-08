@@ -39,6 +39,26 @@ confirmar depois de uns minutos, avisa que não conseguiu confirmar (pode ser
 só demora, ou algo deu errado) em vez de mandar um link que talvez ainda não
 funcione. Isso só funciona com `SITE_URL` preenchido no `wrangler.toml`.
 
+### Análise Editorial com IA (NVIDIA Build / Workers AI)
+
+Antes de qualquer publicação no blog, a IA atua como um assistente editorial:
+
+- **Análise Automática Pré-Postagem:** Ao enviar um `.md` ou finalizar com `/end`, o bot analisa o ensaio e devolve um relatório completo contendo:
+  - 📊 **Visão Geral:** Tese central e tom.
+  - 💡 **Clareza e Argumentação:** Coerência lógica e sugestões de desenvolvimento.
+  - ✍️ **Revisão Textual:** Ortografia, pontuação e concordância.
+  - ✨ **Sugestões para o Blog:** Propostas de subtítulos (`##`) e citações de destaque.
+- **Confirmação:** O relatório é acompanhado de botões para confirmar (`✅ Publicar no Blog`) ou desistir (`🗑️ Cancelar`). Você também pode continuar mandando mensagens para refinar o texto antes de postar.
+- **Comando `/revisar`:** Disponível a qualquer momento durante `/escrever` ou `/editar` para consultar a IA sob demanda.
+
+### Áudio e Transcrição (Whisper AI)
+
+O bot conta com transcrição de voz nativa e gratuita usando o **Cloudflare Workers AI (Whisper)**:
+
+- **Transcrição avulsa:** Mande um áudio de voz ou arquivo de áudio a qualquer momento. O bot transcreve e devolve o texto para você copiar e formatar em Markdown.
+- **Durante o `/escrever`:** Você pode mandar mensagens de áudio enquanto escreve o ensaio; o bot transcreve e acumula o texto diretamente no corpo do ensaio.
+- **Durante o `/editar`:** Mandar um áudio prepara o texto para `/colar` (adicionar no fim) ou `/reescrever` (substituir).
+
 ### `/criar`
 
 Duas formas:

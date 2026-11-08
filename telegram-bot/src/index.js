@@ -16,15 +16,20 @@ const AJUDA_IDLE = `/criar — novo ensaio
 /listar — busca um ensaio só pra ler
 /deletar — busca um ensaio pra apagar
 /rascunhos — retoma um rascunho salvo
-/link — manda o link do site`;
+/link — manda o link do site
+
+🎙️ Mande um áudio a qualquer momento para transcrever em texto.`;
 
 function ajudaContextual(session) {
   if (!session) return AJUDA_IDLE;
+  if (session.mode === "revisar-publicar") {
+    return `Ensaio aguardando confirmação:\n/publicar — publica no blog\n/cancelar — desiste\nOu mande uma mensagem (texto/áudio) para continuar editando.`;
+  }
   if (session.mode === "editando") {
-    return `Editando ${session.path}:\n/reescrever — substitui tudo\n/colar — acrescenta no fim\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
+    return `Editando ${session.path}:\n/reescrever — substitui tudo\n/colar — acrescenta no fim\n/revisar — análise editorial com IA\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
   }
   if (session.mode === "escrevendo") {
-    return `Escrevendo "${session.title}":\n/end — termina e publica\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
+    return `Escrevendo "${session.title}":\n/revisar — análise editorial com IA agora\n/end — conclui para análise final e publicação\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
   }
   // novo-escolha, cabecalho-*
   return `Criando um ensaio novo.\n/cancelar — desiste`;
@@ -105,6 +110,25 @@ async function handleUpdate(update, env) {
     return startBusca(env, chatId, text.replace("/deletar", "").trim().toLowerCase(), "deletar");
   }
   if (text === "/rascunhos") return listarRascunhos(env, chatId);
+  if (text === "/publicar") {
+    if (session?.mode === "revisar-publicar") {
+      return finalizeNewPost(env, chatId, session.header.title, session.markdown);
+    }
+    return send(env, chatId, "Nenhum ensaio aguardando publicação. Use /criar para começar.");
+  }
+
+  // Transcrição de áudio avulsa (fora de fluxos de criação/edição)
+  const audioId = getAudioFileId(msg);
+  if (audioId && !session) {
+    await send(env, chatId, "🎙️ Transcrevendo áudio...");
+    try {
+      const transcricao = await transcreverAudio(env, audioId);
+      if (!transcricao) return send(env, chatId, "⚠️ Não consegui identificar nenhuma fala no áudio.");
+      return sendContent(env, chatId, "🎙️ Transcrição:", transcricao);
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro ao transcrever áudio: ${e.message}`);
+    }
+  }
 
   if (session) return handleSessionMessage(env, chatId, session, msg, text);
 
@@ -121,6 +145,19 @@ async function handleCallback(cq, env) {
   await tg(env, "answerCallbackQuery", { callback_query_id: cq.id });
 
   const data = cq.data;
+
+  // Confirmação de publicação pós-análise da IA
+  if (data === "pub:confirmar") {
+    const session = await env.KV.get(sessionKey(chatId), "json");
+    if (!session || session.mode !== "revisar-publicar") {
+      return send(env, chatId, "Essa sessão expirou. Use /criar para recomeçar.");
+    }
+    return finalizeNewPost(env, chatId, session.header.title, session.markdown);
+  }
+  if (data === "pub:cancelar") {
+    await env.KV.delete(sessionKey(chatId));
+    return send(env, chatId, "🗑️ Publicação cancelada.");
+  }
 
   // Trocar de página na lista de ensaios
   if (data.startsWith("pg:")) {
@@ -173,7 +210,7 @@ async function handleNewFromFile(env, chatId, msg) {
       await env.KV.delete(sessionKey(chatId));
       return send(env, chatId, `⚠️ Faltou no frontmatter: ${faltando.join(", ")}.\nCorrija o arquivo e mande de novo com /criar.`);
     }
-    return finalizeNewPost(env, chatId, title, raw);
+    return prepararRevisaoEConfirmacao(env, chatId, { title, date, description }, body, raw);
   }
 
   // Sem frontmatter: pede os campos do cabeçalho, com o corpo do arquivo já pronto.
@@ -203,7 +240,8 @@ async function handleCabecalho(env, chatId, session, text) {
       const pinned = /^s(im)?$/i.test(text || "");
       const header = { title: session.title, description: session.description, tags: session.tags, pinned, date: today() };
       if (session.bodyPronto !== undefined) {
-        return finalizeNewPost(env, chatId, header.title, buildMarkdown(header, session.bodyPronto));
+        const md = buildMarkdown(header, session.bodyPronto);
+        return prepararRevisaoEConfirmacao(env, chatId, header, session.bodyPronto, md);
       }
       await saveSession(env, chatId, { mode: "escrevendo", ...header, body: "" });
       return send(env, chatId, "Pode escrever o ensaio. Quando terminar, mande /end. Se quiser parar no meio e continuar depois, mande /rascunho.");
@@ -220,7 +258,36 @@ async function handleEscrevendo(env, chatId, session, msg, text) {
     return send(env, chatId, `📝 Rascunho salvo: "${session.title}". Use /rascunhos pra continuar depois.`);
   }
 
-  if (!text) return send(env, chatId, "Nesta etapa eu só aceito texto. Para terminar, mande /end (ou /rascunho pra salvar sem publicar).");
+  // Análise editorial sob demanda durante a escrita
+  if (text === "/revisar" || text === "/analisar") {
+    if (!session.body?.trim()) return send(env, chatId, "Escreva algo no ensaio antes de pedir a revisão.");
+    await send(env, chatId, "🔍 Analisando seu ensaio com IA...");
+    try {
+      const relatorio = await analisarTexto(env, session.title, session.body);
+      await sendContent(env, chatId, relatorio, "");
+      return send(env, chatId, "💡 Pode continuar escrevendo ou ajustando. Quando estiver pronto para publicar, mande /end.");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Não foi possível obter a análise da IA: ${e.message}`);
+    }
+  }
+
+  // Permite mandar áudio para acumular no ensaio
+  const audioId = getAudioFileId(msg);
+  if (audioId) {
+    await send(env, chatId, "🎙️ Transcrevendo áudio...");
+    let transcricao = "";
+    try {
+      transcricao = await transcreverAudio(env, audioId);
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro ao transcrever áudio: ${e.message}`);
+    }
+    if (!transcricao) return send(env, chatId, "⚠️ Não consegui identificar nenhuma fala no áudio.");
+    const body = session.body ? `${session.body}\n\n${transcricao}` : transcricao;
+    await saveSession(env, chatId, { ...session, body });
+    return send(env, chatId, `🎙️ Transcrito e adicionado:\n\n"${transcricao}"\n\nContinue mandando mensagens (texto ou áudio), ou /end para publicar.`);
+  }
+
+  if (!text) return send(env, chatId, "Nesta etapa eu aceito texto ou áudio de voz. Para terminar, mande /end (ou /rascunho pra salvar sem publicar).");
 
   const fimNoFinal = text.match(/\/end\s*$/);
   const ehFim = text === "/end" || Boolean(fimNoFinal);
@@ -236,7 +303,8 @@ async function handleEscrevendo(env, chatId, session, msg, text) {
   if (!body?.trim()) return send(env, chatId, "O ensaio ficou sem texto. Escreva algo antes do /end, ou /cancelar.");
 
   const header = { title: session.title, date: session.date, description: session.description, tags: session.tags, pinned: session.pinned };
-  return finalizeNewPost(env, chatId, header.title, buildMarkdown(header, body));
+  const md = buildMarkdown(header, body);
+  return prepararRevisaoEConfirmacao(env, chatId, header, body, md);
 }
 
 function buildMarkdown({ title, date, description, tags, pinned }, body) {
@@ -248,6 +316,125 @@ function buildMarkdown({ title, date, description, tags, pinned }, body) {
   if (pinned) lines.push("pinned: true");
   lines.push("---", "", body.trim(), "");
   return lines.join("\n");
+}
+
+// =====================================================================
+// IA: Análise Editorial (NVIDIA Build com fallback para Workers AI)
+// =====================================================================
+
+const PROMPT_REVISAO = `Você é o revisor editorial e assistente filosófico do blog Aletheia.
+Sua missão é ler o ensaio e fornecer um relatório conciso, elegante e altamente útil antes da publicação.
+
+Estruture sua resposta com as seguintes seções (use emojis e títulos claros):
+
+📊 Visão Geral
+(1 ou 2 frases sobre a tese central e o tom do texto)
+
+💡 Clareza e Argumentação
+(Pontos fortes da lógica apresentada e eventuais passagens que poderiam ser mais claras ou desenvolvidas)
+
+✍️ Revisão Textual e Ortográfica
+(Apontar se há erros de pontuação, concordância ou palavras repetidas. Se estiver tudo certo, diga que está impecável)
+
+✨ Sugestões para o Blog
+- Sugestão de subtítulos (##) se o texto estiver em bloco único
+- Uma frase marcante do texto que funcionaria como destaque ou citação
+
+Mantenha o tom respeitoso, construtivo e direto ao ponto. Responda em português.`;
+
+async function analisarTexto(env, title, body) {
+  // 1. Tenta a API do NVIDIA Build se a chave estiver configurada
+  if (env.NVIDIA_API_KEY) {
+    try {
+      const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "nvidia/llama-3.1-nemotron-70b-instruct",
+          messages: [
+            { role: "system", content: PROMPT_REVISAO },
+            { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+          ],
+          temperature: 0.2,
+          max_tokens: 1500,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const texto = data.choices?.[0]?.message?.content;
+        if (texto) return `🤖 Análise Editorial (NVIDIA Nemotron 70B):\n\n${texto}`;
+      } else {
+        console.warn(`NVIDIA API retornou status ${res.status}, acionando fallback local...`);
+      }
+    } catch (e) {
+      console.warn("Erro ao conectar à NVIDIA API:", e.message);
+    }
+  }
+
+  // 2. Fallback de alta qualidade: Cloudflare Workers AI (Llama 3.3 70B / Llama 3.1)
+  if (env.AI) {
+    try {
+      const res = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [
+          { role: "system", content: PROMPT_REVISAO },
+          { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+        ],
+        max_tokens: 1500,
+      });
+      if (res?.response) return `🤖 Análise Editorial (Llama 3.3 70B):\n\n${res.response}`;
+    } catch (errLlama) {
+      console.warn("Llama 3.3 falhou, tentando Llama 3.1 8B:", errLlama);
+      const res = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        messages: [
+          { role: "system", content: PROMPT_REVISAO },
+          { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+        ],
+        max_tokens: 1500,
+      });
+      if (res?.response) return `🤖 Análise Editorial (Llama 3.1 8B):\n\n${res.response}`;
+    }
+  }
+
+  throw new Error("Nenhum serviço de IA disponível para análise.");
+}
+
+async function prepararRevisaoEConfirmacao(env, chatId, header, body, markdown) {
+  const problemas = validateFrontmatter(markdown);
+  if (problemas.length) {
+    await env.KV.delete(sessionKey(chatId));
+    return send(env, chatId, `⚠️ Não posso publicar: faltou ${problemas.join(", ")} no frontmatter.`);
+  }
+
+  await saveSession(env, chatId, {
+    mode: "revisar-publicar",
+    header,
+    body,
+    markdown,
+  });
+
+  await send(env, chatId, "🔍 Analisando seu ensaio com IA antes da postagem...");
+  try {
+    const relatorio = await analisarTexto(env, header.title, body);
+    await sendContent(env, chatId, relatorio, "");
+  } catch (e) {
+    await send(env, chatId, `⚠️ Não foi possível obter a análise da IA (${e.message}), mas você ainda pode publicar.`);
+  }
+
+  return tg(env, "sendMessage", {
+    chat_id: chatId,
+    text: `Deseja publicar "${header.title}" no blog?`,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "✅ Publicar no Blog", callback_data: "pub:confirmar" },
+          { text: "🗑️ Cancelar", callback_data: "pub:cancelar" },
+        ],
+      ],
+    },
+  });
 }
 
 async function finalizeNewPost(env, chatId, title, markdown) {
@@ -435,9 +622,36 @@ async function handleEditando(env, chatId, session, msg, text) {
     return handlePinOuTag(env, chatId, session, text);
   }
 
-  // Chegou um conteúdo novo (texto ou arquivo): guarda como pendente, aguardando /reescrever ou /colar.
-  const conteudo = msg.document ? normalize(await downloadFile(env, msg.document.file_id)) : text;
-  if (!conteudo) return send(env, chatId, "Mande o texto editado, ou um arquivo .md, e depois /reescrever ou /colar.");
+  // Análise editorial sob demanda durante a edição
+  if (text === "/revisar" || text === "/analisar") {
+    const alvo = session.pendente ?? session.original;
+    const { data: fm, body } = parseFrontmatter(alvo);
+    const titulo = fm ? extractField(fm, "title") : fileName(session.path);
+    await send(env, chatId, "🔍 Analisando seu ensaio com IA...");
+    try {
+      const relatorio = await analisarTexto(env, titulo || "Ensaio", body || alvo);
+      return sendContent(env, chatId, relatorio, "");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Não foi possível obter a análise da IA: ${e.message}`);
+    }
+  }
+
+  // Chegou um conteúdo novo (texto, áudio ou arquivo): guarda como pendente, aguardando /reescrever ou /colar.
+  let conteudo = text;
+  const audioId = getAudioFileId(msg);
+  if (msg.document) {
+    conteudo = normalize(await downloadFile(env, msg.document.file_id));
+  } else if (audioId) {
+    await send(env, chatId, "🎙️ Transcrevendo áudio...");
+    try {
+      conteudo = await transcreverAudio(env, audioId);
+      if (!conteudo) return send(env, chatId, "⚠️ Não consegui identificar nenhuma fala no áudio.");
+      await send(env, chatId, `🎙️ Transcrito:\n\n"${conteudo}"\n\nAgora use /colar (adiciona ao fim) ou /reescrever (substitui tudo).`);
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro ao transcrever áudio: ${e.message}`);
+    }
+  }
+  if (!conteudo) return send(env, chatId, "Mande o texto editado, um áudio ou arquivo .md, e depois /reescrever ou /colar.");
   await saveSession(env, chatId, { ...session, pendente: conteudo });
 }
 
@@ -522,6 +736,14 @@ async function handleSessionMessage(env, chatId, session, msg, text) {
   if (session.mode?.startsWith("cabecalho-")) return handleCabecalho(env, chatId, session, text);
   if (session.mode === "escrevendo") return handleEscrevendo(env, chatId, session, msg, text);
   if (session.mode === "editando") return handleEditando(env, chatId, session, msg, text);
+  if (session.mode === "revisar-publicar") {
+    if (text === "/publicar") {
+      return finalizeNewPost(env, chatId, session.header.title, session.markdown);
+    }
+    // Mande mais texto ou áudio para continuar ajustando
+    session.mode = "escrevendo";
+    return handleEscrevendo(env, chatId, session, msg, text);
+  }
 
   await env.KV.delete(sessionKey(chatId));
   return send(env, chatId, `Sessão perdida, começando do zero.\n\n${AJUDA_IDLE}`);
@@ -646,6 +868,43 @@ async function downloadFile(env, fileId) {
   const { result } = await r.json();
   const f = await fetch(`https://api.telegram.org/file/bot${env.TELEGRAM_TOKEN}/${result.file_path}`);
   return f.text();
+}
+
+function getAudioFileId(msg) {
+  if (msg.voice?.file_id) return msg.voice.file_id;
+  if (msg.audio?.file_id) return msg.audio.file_id;
+  if (msg.document && /\.(ogg|oga|mp3|m4a|wav|aac|flac)$/i.test(msg.document.file_name || "")) {
+    return msg.document.file_id;
+  }
+  return null;
+}
+
+async function downloadAudioBuffer(env, fileId) {
+  const r = await tg(env, "getFile", { file_id: fileId });
+  const data = await r.json();
+  if (!data.ok || !data.result?.file_path) {
+    throw new Error("Não foi possível obter o arquivo de áudio do Telegram.");
+  }
+  const f = await fetch(`https://api.telegram.org/file/bot${env.TELEGRAM_TOKEN}/${data.result.file_path}`);
+  if (!f.ok) throw new Error(`Falha ao baixar áudio do Telegram (${f.status}).`);
+  return f.arrayBuffer();
+}
+
+async function transcreverAudio(env, fileId) {
+  if (!env.AI) {
+    throw new Error("O binding 'AI' não está ativo no Worker. Verifique o wrangler.toml e faça o deploy.");
+  }
+  const arrayBuffer = await downloadAudioBuffer(env, fileId);
+  const audio = Array.from(new Uint8Array(arrayBuffer));
+
+  let res;
+  try {
+    res = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { audio });
+  } catch {
+    // Fallback para o whisper base caso o turbo oscile
+    res = await env.AI.run("@cf/openai/whisper", { audio });
+  }
+  return res?.text?.trim() || "";
 }
 
 function tg(env, method, payload) {
