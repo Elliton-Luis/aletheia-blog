@@ -19,7 +19,7 @@ const { Content, headings } = await render(article);
 const tableOfContents = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
 ---
 
-<BaseLayout title={article.data.title} description={article.data.description} wide>
+<BaseLayout title={article.data.title} description={article.data.description} wide showPrint>
   <article class="post">
     <header class="post-header">
       <a class="back-link icon-link" href="/ensaios/"><Icon name="arrow-left" />Todos os ensaios</a>

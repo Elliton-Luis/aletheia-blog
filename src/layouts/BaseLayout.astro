@@ -8,9 +8,10 @@ interface Props {
   title: string;
   description?: string;
   wide?: boolean;
+  showPrint?: boolean;
 }
 
-const { title, description = 'Um espaço pessoal para registrar ideias, leituras e descobertas.', wide = false } = Astro.props;
+const { title, description = 'Um espaço pessoal para registrar ideias, leituras e descobertas.', wide = false, showPrint = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
@@ -47,10 +48,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           <a class="icon-link" href="/ensaios/"><Icon name="book" /><span>Ensaios</span></a>
           <a class="icon-link" href="/assuntos/"><Icon name="tag" /><span>Assuntos</span></a>
           <a class="icon-link" href="/sobre/"><Icon name="user" /><span>Sobre</span></a>
-          <button class="theme-toggle icon-link" id="print-button" type="button" aria-label="Imprimir esta página">
-            <Icon name="printer" />
-            <span>Imprimir</span>
-          </button>
+          {showPrint && (
+            <button class="theme-toggle icon-link" id="print-button" type="button" aria-label="Imprimir este ensaio">
+              <Icon name="printer" />
+              <span>Imprimir</span>
+            </button>
+          )}
           <button class="theme-toggle icon-link" id="theme-toggle" type="button" aria-label="Alternar tema" aria-pressed="false">
             <Icon name="moon" class="theme-icon-moon" />
             <Icon name="sun" class="theme-icon-sun" />
