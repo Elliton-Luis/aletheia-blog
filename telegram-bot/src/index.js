@@ -48,7 +48,7 @@ export default {
     if (request.method !== "POST") return new Response("ok");
 
     // Só aceita chamadas vindas do Telegram (segredo definido no setWebhook)
-    if (request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== env.TELEGRAM_SECRET) {
+    if (!env.TELEGRAM_SECRET || request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== env.TELEGRAM_SECRET) {
       return new Response("forbidden", { status: 403 });
     }
 
@@ -73,6 +73,9 @@ async function handleUpdate(update, env) {
 
   const msg = update.message;
   if (!msg) return;
+
+  // Só responde em conversas privadas (nunca em grupos ou canais)
+  if (msg.chat?.type !== "private") return;
 
   // Whitelist: ignora qualquer pessoa que não seja você
   if (String(msg.from?.id) !== String(env.ALLOWED_USER_ID)) return;
@@ -109,9 +112,13 @@ async function handleUpdate(update, env) {
 }
 
 async function handleCallback(cq, env) {
-  const chatId = cq.message.chat.id;
+  // Whitelist: ignora cliques de qualquer pessoa que não seja você
+  if (String(cq.from?.id) !== String(env.ALLOWED_USER_ID)) return;
+
+  const chatId = cq.message?.chat?.id;
+  if (!chatId) return;
+
   await tg(env, "answerCallbackQuery", { callback_query_id: cq.id });
-  if (String(cq.from.id) !== String(env.ALLOWED_USER_ID)) return;
 
   const data = cq.data;
 
