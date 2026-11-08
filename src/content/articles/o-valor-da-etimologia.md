@@ -1,6 +1,6 @@
 ---
 title: "O valor da etimologia"
-date: 2026-09-08
+date: 2026-11-08
 description: "Uma reflexão sobre o valor do conhecimento acerca da origem das palavras"
 tags:
   - filosofia
