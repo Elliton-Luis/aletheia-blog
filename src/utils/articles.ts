@@ -3,10 +3,12 @@ import type { CollectionEntry } from 'astro:content';
 export type Article = CollectionEntry<'articles'>;
 
 export function newestFirst(articles: Article[]) {
-  return articles.sort((a, b) => {
-    if (a.data.pinned !== b.data.pinned) return a.data.pinned ? -1 : 1;
-    return b.data.date.valueOf() - a.data.date.valueOf();
-  });
+  return articles.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+}
+
+/** Ensaios marcados com `pinned: true`, do mais novo para o mais antigo. Não remove nada da lista original — é só uma seleção. */
+export function pinnedArticles(articles: Article[]) {
+  return newestFirst(articles.filter((article) => article.data.pinned));
 }
 
 export function articlePath(article: Article) {

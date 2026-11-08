@@ -3,9 +3,10 @@ import { getCollection } from 'astro:content';
 import ArticleList from '../../components/ArticleList.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Icon from '../../components/Icon.astro';
-import { newestFirst } from '../../utils/articles';
+import { newestFirst, pinnedArticles } from '../../utils/articles';
 
 const articles = newestFirst(await getCollection('articles'));
+const pinned = pinnedArticles(articles);
 ---
 
 <BaseLayout title="Ensaios" description="Todos os ensaios publicados neste caderno, em ordem cronológica.">
@@ -14,6 +15,12 @@ const articles = newestFirst(await getCollection('articles'));
     <h1>Ensaios</h1>
     <p>Ideias, leituras e descobertas reunidas ao longo do tempo.</p>
   </header>
+  {pinned.length > 0 && (
+    <section class="pinned-block" aria-labelledby="fixados">
+      <p class="eyebrow icon-link" id="fixados"><Icon name="pin" />Fixados</p>
+      <ArticleList articles={pinned} showMonthHeadings={false} />
+    </section>
+  )}
   <div class="search-filter" id="search-filter" hidden>
     <label for="search-text" class="sr-only">Buscar por título, descrição ou assunto</label>
     <Icon name="search" />

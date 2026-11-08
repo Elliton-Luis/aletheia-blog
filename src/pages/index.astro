@@ -3,12 +3,19 @@ import { getCollection } from 'astro:content';
 import ArticleList from '../components/ArticleList.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icon.astro';
-import { newestFirst } from '../utils/articles';
+import { newestFirst, pinnedArticles } from '../utils/articles';
 
 const articles = newestFirst(await getCollection('articles'));
+const pinned = pinnedArticles(articles);
 ---
 
 <BaseLayout title="Um espaço para pensar" description="Pensamentos, reflexões, estudos e descobertas reunidos em um caderno pessoal.">
+  {pinned.length > 0 && (
+    <section class="pinned-block" aria-labelledby="fixados">
+      <p class="eyebrow icon-link" id="fixados"><Icon name="pin" />Fixados</p>
+      <ArticleList articles={pinned} showMonthHeadings={false} />
+    </section>
+  )}
   <section class="home-feed" aria-labelledby="recentes">
     <div class="section-heading">
       <div><p class="eyebrow">Aletheia</p><h1 id="recentes">Publicações recentes</h1></div>
