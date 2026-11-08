@@ -6,7 +6,7 @@ tags:
   - filosofia
   - teologia
   - educação
-pinned:true
+pinned: true
 ---
 
 ## Começar pela filosofia
