@@ -8,13 +8,27 @@
 // um ensaio sem title/date/description, porque isso quebraria o build
 // (astro check) do blog.
 
-const AJUDA = `/criar — novo ensaio (manda um .md pra publicar direto, ou /escrever pra montar aqui no chat)
-/editar — busca um ensaio pra alterar (dentro dele: /reescrever, /colar, /pin, /tag nome-da-tag)
+// Comandos usáveis sem nenhum fluxo em andamento. Os comandos de dentro de
+// cada fluxo (/end, /reescrever, /colar, /pin, /tag, /rascunho) só aparecem
+// quando fazem sentido — ver ajudaContextual().
+const AJUDA_IDLE = `/criar — novo ensaio
+/editar — busca um ensaio pra alterar
 /listar — busca um ensaio só pra ler
-/deletar — busca um ensaio pra apagar (some em 20 minutos; dá tempo de /cancelar)
-/rascunhos — retoma um ensaio salvo com /rascunho (durante o /escrever)
-/link — manda o link do site
-/cancelar — desiste do que estiver em andamento (inclusive uma exclusão agendada)`;
+/deletar — busca um ensaio pra apagar
+/rascunhos — retoma um rascunho salvo
+/link — manda o link do site`;
+
+function ajudaContextual(session) {
+  if (!session) return AJUDA_IDLE;
+  if (session.mode === "editando") {
+    return `Editando ${session.path}:\n/reescrever — substitui tudo\n/colar — acrescenta no fim\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
+  }
+  if (session.mode === "escrevendo") {
+    return `Escrevendo "${session.title}":\n/end — termina e publica\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
+  }
+  // novo-escolha, cabecalho-*
+  return `Criando um ensaio novo.\n/cancelar — desiste`;
+}
 
 const VINTE_MINUTOS = 20 * 60 * 1000;
 const TRINTA_DIAS = 60 * 60 * 24 * 30;
@@ -64,9 +78,10 @@ async function handleUpdate(update, env) {
   if (String(msg.from?.id) !== String(env.ALLOWED_USER_ID)) return;
   const chatId = msg.chat.id;
   const text = msg.text?.trim();
+  const session = await env.KV.get(sessionKey(chatId), "json");
 
   // Comandos globais: sempre interrompem o que estiver em andamento
-  if (text === "/start" || text === "/ajuda") return send(env, chatId, AJUDA);
+  if (text === "/start" || text === "/ajuda") return send(env, chatId, ajudaContextual(session));
   if (text === "/cancelar") {
     await env.KV.delete(sessionKey(chatId));
     const canceladas = await cancelarExclusoesPendentes(env, chatId);
@@ -88,10 +103,9 @@ async function handleUpdate(update, env) {
   }
   if (text === "/rascunhos") return listarRascunhos(env, chatId);
 
-  const session = await env.KV.get(sessionKey(chatId), "json");
   if (session) return handleSessionMessage(env, chatId, session, msg, text);
 
-  return send(env, chatId, `Não entendi. Comandos:\n\n${AJUDA}`);
+  return send(env, chatId, `Não entendi. Comandos:\n\n${AJUDA_IDLE}`);
 }
 
 async function handleCallback(cq, env) {
@@ -502,7 +516,7 @@ async function handleSessionMessage(env, chatId, session, msg, text) {
   if (session.mode === "editando") return handleEditando(env, chatId, session, msg, text);
 
   await env.KV.delete(sessionKey(chatId));
-  return send(env, chatId, `Sessão perdida, começando do zero.\n\n${AJUDA}`);
+  return send(env, chatId, `Sessão perdida, começando do zero.\n\n${AJUDA_IDLE}`);
 }
 
 // =====================================================================
