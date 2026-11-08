@@ -41,3 +41,7 @@ Veja o [guia de Markdown](docs/guia-markdown.md) para os campos do frontmatter e
 4. Clique em **Deploy**. A Vercel fará novo build automaticamente a cada push na branch conectada.
 
 Não é necessário adapter para a publicação estática. O RSS é gerado em `/rss.xml` e o sitemap em `/sitemap-index.xml`.
+
+## Publicar pelo celular
+
+[`telegram-bot/`](telegram-bot/README.md) é um bot do Telegram, independente deste site, que cria e edita ensaios direto do celular (sem PC), publicando via commit no GitHub. Veja o README dele para instalar — nada ali roda junto com o build do blog.
