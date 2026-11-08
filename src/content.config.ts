@@ -12,6 +12,7 @@ const articles = defineCollection({
     date: z.coerce.date(),
     description: z.string(),
     tags: z.array(z.string()).default([]),
+    pinned: z.boolean().default(false),
   }),
 });
 

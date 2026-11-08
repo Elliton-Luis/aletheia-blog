@@ -1,5 +1,5 @@
 ---
-type IconName = 'arrow-left' | 'arrow-right' | 'arrow-up' | 'printer' | 'arrow-up-right' | 'book' | 'calendar' | 'mail' | 'moon' | 'rss' | 'sun' | 'tag' | 'user';
+type IconName = 'arrow-left' | 'arrow-right' | 'arrow-up' | 'printer' | 'arrow-up-right' | 'book' | 'calendar' | 'mail' | 'moon' | 'pin' | 'rss' | 'sun' | 'tag' | 'user';
 
 interface Props {
   name: IconName;
@@ -29,6 +29,7 @@ const { name, class: className } = Astro.props;
   {name === 'calendar' && <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /><path d="M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" /></>}
   {name === 'mail' && <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>}
   {name === 'moon' && <path d="M20.8 14.1A8.8 8.8 0 0 1 9.9 3.2 8.9 8.9 0 1 0 20.8 14.1z" />}
+  {name === 'pin' && <><path d="M12 17v5" /><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z" /></>}
   {name === 'rss' && <><path d="M5 19h.01" /><path d="M5 12a7 7 0 0 1 7 7" /><path d="M5 5a14 14 0 0 1 14 14" /></>}
   {name === 'sun' && <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>}
   {name === 'tag' && <><path d="M20.6 13.4 13.4 20.6 3 10.2V3h7.2z" /><circle cx="7.5" cy="7.5" r="1" /></>}

@@ -4,6 +4,7 @@
 #   arquivo modificado  -> "revisão: nome.md"
 #   arquivo removido    -> "remoção: nome.md"
 # Só os ensaios entram nos commits; outras mudanças ficam como estão.
+# Depois dos commits, faz push automático (git push) da branch atual.
 # Uso: npm run commit:ensaios [-- --dry-run]   (--dry-run só mostra o que seria feito)
 set -euo pipefail
 
@@ -13,6 +14,7 @@ dry=false
 [[ "${1:-}" == "--dry-run" ]] && dry=true
 
 found=false
+committed=false
 while IFS= read -r line; do
   [[ -z "$line" ]] && continue
   status="${line:0:2}"
@@ -36,7 +38,13 @@ while IFS= read -r line; do
     git add -A -- "$file"
     git commit -q -m "$msg" -- "$file"
     echo "commit: $msg"
+    committed=true
   fi
 done < <(git status --porcelain --untracked-files=all -- "$dir")
 
 $found || echo "Nenhum ensaio alterado."
+
+if $committed; then
+  echo "Enviando para o remoto..."
+  git push || { echo "Push falhou. Os commits continuam locais; rode 'git push' depois." >&2; exit 1; }
+fi

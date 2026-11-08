@@ -101,6 +101,8 @@ h1 em { color: var(--muted); font-weight: 400; }
 .article-mon { margin-top: .4rem; font-family: var(--sans); font-size: .76rem; font-weight: 650; letter-spacing: .22em; text-indent: .22em; text-transform: uppercase; }
 .article-main-link:hover .article-date { color: var(--ink); }
 .article-summary h3 { margin: 0 0 .35rem; font-size: clamp(1.35rem, 2vw, 1.7rem); transition: color .15s ease; }
+.pin-icon { width: .72em; height: .72em; margin-right: .3em; color: var(--accent); fill: var(--accent); vertical-align: .05em; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .article-summary p { max-width: 44rem; margin: 0; color: var(--muted); font-size: 1.02rem; }
 .article-class { display: block; margin-bottom: .45rem; color: var(--accent); font-size: .74rem; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; }
 .post-class { margin: 0 0 .2rem; color: var(--accent); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; }

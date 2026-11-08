@@ -42,7 +42,15 @@ const rows = articles.map((article, index) => {
           </time>
           <div class="article-summary">
             <span class="article-class" title={category.title}>{category.name} · {category.formatted} caracteres · {category.minutes} min de leitura</span>
-            <h3>{article.data.title}</h3>
+            <h3>
+              {article.data.pinned && (
+                <>
+                  <Icon name="pin" class="pin-icon" />
+                  <span class="sr-only">Fixado —</span>{' '}
+                </>
+              )}
+              {article.data.title}
+            </h3>
             <p>{article.data.description}</p>
           </div>
           <Icon name="arrow-up-right" class="article-arrow" />
