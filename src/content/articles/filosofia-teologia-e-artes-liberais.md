@@ -2,6 +2,7 @@
 title: "Filosofia, teologia e artes liberais"
 date: 2026-11-01
 description: "Uma reflexão sobre começar pela filosofia, compreender as artes liberais e chegar às ciências elevadas."
+pinned:True
 tags:
   - filosofia
   - teologia
