@@ -392,7 +392,8 @@ async function sendForReading(env, chatId, path) {
   } catch (e) {
     return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
   }
-  await sendContent(env, chatId, `🔎 ${path}`, file.text);
+  const link = env.SITE_URL ? `\n🔗 ${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slugFromPath(path)}/` : "";
+  await sendContent(env, chatId, `🔎 ${path}${link}`, file.text);
 }
 
 async function sendForEditing(env, chatId, path) {

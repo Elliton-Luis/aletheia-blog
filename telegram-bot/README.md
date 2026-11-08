@@ -52,7 +52,7 @@ A data é sempre a de hoje; para mudar depois, use `/editar`.
 
 Os dois buscam do mesmo jeito: `/editar` lista todos os ensaios paginados de 10 em 10, ou `/editar palavra` filtra pelo nome do arquivo (`/listar` igual). Você toca no ensaio na lista.
 
-- **`/listar`:** só mostra o conteúdo (como texto, ou como arquivo `.md` se for grande demais para uma mensagem do Telegram — limite de ~4096 caracteres). Não dá para alterar por aqui.
+- **`/listar`:** mostra o conteúdo (como texto, ou como arquivo `.md` se for grande demais para uma mensagem do Telegram — limite de ~4096 caracteres) junto com o link do ensaio no site. Não dá para alterar por aqui.
 - **`/editar`:** mostra o conteúdo do mesmo jeito. Copie, edite (no próprio chat ou num editor, tanto faz) e mande de volta — como texto ou como arquivo. Depois, decida o que fazer com o que você mandou:
   - **`/reescrever`** — substitui o ensaio inteiro pelo que você mandou (precisa vir com o frontmatter completo).
   - **`/colar`** — acrescenta o que você mandou no fim do ensaio original, como um apêndice (não mexe no frontmatter).
