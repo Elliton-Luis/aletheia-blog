@@ -294,10 +294,20 @@ h1 em { color: var(--muted); font-weight: 400; }
   .article-arrow { display: none; }
   .tag-list { margin-left: 5.2rem; }
   .archive-count { display: none !important; }
-  .site-footer { margin-top: 1.2rem; border-top: 1px solid #aaa69c !important; }
-  .footer-inner { width: 100%; min-height: 0; justify-content: flex-end; padding-top: .4rem; color: #444; font-size: 9pt; }
-  .footer-tagline, .footer-inner a { display: none !important; }
-  .footer-credit { display: block; color: #333; }
+  .site-footer { display: none !important; }
   .home-note, .article-row, .post-footer, .about-contact { border-color: #aaa69c !important; }
   .post-contact { color: #333; }
+  .print-credit {
+    display: block;
+    position: fixed;
+    right: 0;
+    bottom: 6mm;
+    left: 0;
+    color: #888;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 8pt;
+    font-variant: small-caps;
+    letter-spacing: .06em;
+    text-align: center;
+  }
 }
