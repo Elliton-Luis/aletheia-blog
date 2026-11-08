@@ -10,7 +10,8 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "commit:ensaios": "bash scripts/commit-ensaios.sh"
+    "commit:ensaios": "bash scripts/commit-ensaios.sh",
+    "criar:ensaio": "bash scripts/criar-ensaio.sh"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",

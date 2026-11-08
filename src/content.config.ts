@@ -6,6 +6,9 @@ const articles = defineCollection({
   loader: glob({
     base: './src/content/articles',
     pattern: ['**/*.md', '!**/example.md'],
+    // O arquivo pode ter um prefixo numérico (ex.: "7.nome-do-ensaio.md") só para organizar
+    // a pasta; a URL do ensaio usa apenas o nome, sem o número.
+    generateId: ({ entry }) => entry.replace(/\.md$/, '').replace(/^\d+\./, ''),
   }),
   schema: z.object({
     title: z.string(),
