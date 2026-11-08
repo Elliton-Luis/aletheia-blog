@@ -6,7 +6,7 @@ commit, e a Vercel já builda e publica sozinha.
 
 Este bot é específico para este repositório: ele conhece a pasta
 `src/content/articles`, os campos obrigatórios do frontmatter (`title`,
-`date`, `description`) e a numeração dos arquivos (`NN.nome.md`), do mesmo
+`date`, `description`) e a numeração dos arquivos (`NNNN.nome.md`), do mesmo
 jeito que o `scripts/criar-ensaio.sh` local.
 
 Veja os dois guias do blog antes de usar: [guia de comandos](../docs/guia-comandos.md)
@@ -43,7 +43,7 @@ funcione. Isso só funciona com `SITE_URL` preenchido no `wrangler.toml`.
 
 Duas formas:
 
-- **Mandar um arquivo `.md`:** se já tem `title`, `date` e `description` no frontmatter, publica na hora — só escolhe o número certo do arquivo (`NN.nome.md`). Se faltar algum desses campos, o bot avisa o que falta e pede para corrigir e mandar de novo.
+- **Mandar um arquivo `.md`:** se já tem `title`, `date` e `description` no frontmatter, publica na hora — só escolhe o número certo do arquivo (`NNNN.nome.md`). Se faltar algum desses campos, o bot avisa o que falta e pede para corrigir e mandar de novo.
 - **`/escrever`** (depois de `/criar`): o bot pergunta, em sequência, **título**, **descrição**, **tags** (manda `-` para usar o padrão `filosofia`) e se quer **fixar** (`pinned`, manda `-` para não). Depois disso, escreva o ensaio à vontade — pode mandar quantas mensagens quiser, o bot só acumula em silêncio. Quando terminar, mande **`/end`** (sozinho, ou no fim da última mensagem, tipo "...e com isso concluímos o artigo /end") — isso publica o ensaio. Se quiser parar no meio e continuar outra hora, mande **`/rascunho`** em vez de `/end` — ele salva o que você já escreveu (até 30 dias) e você retoma depois com `/rascunhos`.
 
 A data é sempre a de hoje; para mudar depois, use `/editar`.

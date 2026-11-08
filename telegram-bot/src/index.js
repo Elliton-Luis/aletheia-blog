@@ -252,7 +252,7 @@ async function finalizeNewPost(env, chatId, title, markdown) {
 
   const number = await nextNumber(env);
   const slug = slugify(title);
-  const path = `${env.CONTENT_PATH}/${String(number).padStart(2, "0")}.${slug}.md`;
+  const path = `${env.CONTENT_PATH}/${String(number).padStart(4, "0")}.${slug}.md`;
 
   try {
     await commitFile(env, path, markdown, `novo: ${fileName(path)}`);

@@ -67,7 +67,7 @@ Como já falei em [Verdade e mentira social](/ensaios/verdade-e-mentira-social/)
 Esse tema também aparece em [outros textos sobre filosofia](/assuntos/filosofia/).
 ```
 
-O endereço de um ensaio é sempre `/ensaios/` mais o nome do arquivo sem o número e sem `.md` — por exemplo, `07.sobre-o-agnosticismo.md` vira `/ensaios/sobre-o-agnosticismo/`.
+O endereço de um ensaio é sempre `/ensaios/` mais o nome do arquivo sem o número e sem `.md` — por exemplo, `0007.sobre-o-agnosticismo.md` vira `/ensaios/sobre-o-agnosticismo/`.
 
 ## Exemplo completo
 

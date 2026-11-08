@@ -22,13 +22,13 @@ Rode `npm run build` sempre que mexer em algo estrutural (layout, estilos, scrip
 
 ```sh
 npm run criar:ensaio
-# cria src/content/articles/NN.artigo-exemplo.md (NN = próximo número livre, com zero à esquerda)
+# cria src/content/articles/NNNN.artigo-exemplo.md (NNNN = próximo número livre, com zero à esquerda)
 
 npm run criar:ensaio --nome "Sobre o agnosticismo"
-# cria NN.sobre-o-agnosticismo.md, já com esse título preenchido
+# cria NNNN.sobre-o-agnosticismo.md, já com esse título preenchido
 ```
 
-- `NN` é sempre o maior número já usado na pasta, mais um, completado com zero à esquerda (01, 02, ..., 10, 11...) — assim a ordem alfabética da pasta bate com a ordem numérica.
+- `NNNN` é sempre o maior número já usado na pasta, mais um, completado com zero à esquerda (0001, 0002, ..., 0010, 0011...) — assim a ordem alfabética da pasta bate com a ordem numérica.
 - Sem `--nome`, o arquivo nasce com o nome `artigo-exemplo`; troque pelo nome real (mantendo o número na frente) e edite o título dentro do arquivo.
 - O número é só para organizar a pasta — não aparece na URL do ensaio.
 - Veja o [guia de Markdown](guia-markdown.md) para o que preencher dentro do arquivo.

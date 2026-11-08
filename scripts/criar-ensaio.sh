@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Cria um novo ensaio em src/content/articles/ já com o próximo número da
-# sequência, completado com zero à esquerda (ex.: se o maior hoje é 07, o
-# novo arquivo nasce como "08.nome.md") — isso mantém a ordem alfabética
-# igual à ordem numérica (sem isso, "10." viria antes de "2.").
+# sequência, completado com zero à esquerda em 4 dígitos (ex.: se o maior
+# hoje é 0007, o novo arquivo nasce como "0008.nome.md") — isso mantém a
+# ordem alfabética igual à ordem numérica (sem isso, "10." viria antes de
+# "2."). Com 4 dígitos, aguenta até 9999 ensaios sem precisar renumerar.
 #
 # Uso:
 #   npm run criar:ensaio --nome "Sobre o agnosticismo"
-#     -> cria 08.sobre-o-agnosticismo.md, com esse título já preenchido
+#     -> cria 0008.sobre-o-agnosticismo.md, com esse título já preenchido
 #   npm run criar:ensaio
-#     -> cria 08.artigo-exemplo.md; troque "artigo-exemplo" pelo nome real
+#     -> cria 0008.artigo-exemplo.md; troque "artigo-exemplo" pelo nome real
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -24,7 +25,7 @@ for f in "$dir"/*.md; do
   fi
 done
 
-next=$(printf "%02d" $((max + 1)))
+next=$(printf "%04d" $((max + 1)))
 
 if [[ -n "$title" ]]; then
   slug="$(echo "$title" \
