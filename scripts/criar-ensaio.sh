@@ -16,16 +16,15 @@ cd "$(git rev-parse --show-toplevel)"
 dir="src/content/articles"
 title="${1:-}"
 
-max=0
-for f in "$dir"/*.md; do
-  name="$(basename "$f")"
-  if [[ "$name" =~ ^([0-9]+)\. ]]; then
-    n=$((10#${BASH_REMATCH[1]}))  # 10# força base decimal (zero à esquerda não é octal)
-    (( n > max )) && max=$n
-  fi
-done
-
-next=$(printf "%04d" $((max + 1)))
+# Pega os 4 primeiros caracteres do último artigo e soma 1
+last_file="$(ls -1 "$dir"/[0-9]*.md 2>/dev/null | sort | tail -n 1 || true)"
+if [[ -n "$last_file" ]]; then
+  last_name="$(basename "$last_file")"
+  prefix="${last_name:0:4}"
+  next=$(printf "%04d" $((10#$prefix + 1)))
+else
+  next="0001"
+fi
 
 if [[ -n "$title" ]]; then
   slug="$(echo "$title" \

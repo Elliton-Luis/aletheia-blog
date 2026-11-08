@@ -28,7 +28,7 @@ npm run criar:ensaio --nome "Sobre o agnosticismo"
 # cria NNNN.sobre-o-agnosticismo.md, já com esse título preenchido
 ```
 
-- `NNNN` é sempre o maior número já usado na pasta, mais um, completado com zero à esquerda (0001, 0002, ..., 0010, 0011...) — assim a ordem alfabética da pasta bate com a ordem numérica.
+- `NNNN` é baseado nos 4 primeiros dígitos do último artigo na pasta, mais um, completado com zero à esquerda (0001, 0002, ..., 0010, 0011...) — assim a ordem alfabética da pasta bate com a ordem numérica.
 - Sem `--nome`, o arquivo nasce com o nome `artigo-exemplo`; troque pelo nome real (mantendo o número na frente) e edite o título dentro do arquivo.
 - O número é só para organizar a pasta — não aparece na URL do ensaio.
 - Veja o [guia de Markdown](guia-markdown.md) para o que preencher dentro do arquivo.
@@ -48,12 +48,13 @@ npm run commit:ensaios -- --dry-run # só mostra o que seria commitado, sem comm
 
 ```sh
 npm run sync
+npm run sync -- --stash  # se você tiver rascunhos ou mudanças locais não commitadas
 ```
 
-Busca o que mudou no GitHub e traz para cá com um merge. Use sempre que suspeitar que um ensaio foi criado ou editado fora deste PC (pelo bot do Telegram, ou direto pelo GitHub) — ele avisa se há algo novo, se já está tudo sincronizado, ou se deu conflito (nesse caso, mostra os comandos para resolver).
+Busca o que mudou no GitHub e traz para cá com um merge. Use sempre que suspeitar que um ensaio foi criado ou editado fora deste PC (pelo bot do Telegram, ou direto pelo GitHub) — ele avisa se há algo novo, lista os commits trazidos, avisa se você tem commits locais para enviar (`git push`) ou se deu conflito (com comandos para resolver ou abortar).
 
-- Recusa rodar se houver mudanças não commitadas aqui — commite ou descarte antes.
-- Não substitui o `git push`: ele só traz, não manda nada daqui para o GitHub.
+- Se houver mudanças locais não commitadas, use `npm run sync -- --stash` para guardá-las temporariamente e restaurá-las ao final.
+- Não substitui o `git push`: ele só traz, não manda nada daqui para o GitHub (mas avisa se você tiver commits locais acumulados).
 
 ## Git, no dia a dia
 
