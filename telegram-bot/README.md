@@ -42,14 +42,16 @@ funcione. Isso só funciona com `SITE_URL` preenchido no `wrangler.toml`.
 
 ### Análise Editorial com Duas IAs (IA A e IA B)
 
-Antes de qualquer publicação no blog, o bot consulta **duas IAs independentes** em paralelo para trazer pontos de vista diferentes:
+Antes de qualquer publicação no blog (ou sob demanda com `/analise` e `/revisar`), o bot consulta **duas IAs independentes** em paralelo para trazer pontos de vista diferentes:
 
 - **Visão Neutra e Comparativa:** Os pareceres chegam como `🤖 Opinião da IA A` e `🤖 Opinião da IA B`, sem indicar quais modelos foram chamados, permitindo avaliar sugestões sem viés de marca.
-- **Apenas Sugestões:** A IA atua como leitor crítico e conselheiro editorial — ela aponta reflexões, ambiguidades e sugestões de estilo, mas a decisão final é 100% do autor.
+- **Nota (0 a 10) e Diagnóstico:** Cada IA avalia a relação entre o potencial do tema e o caminho/execução do texto, apontando se o tema é promissor e bem executado, se está em desenvolvimento, ou se a execução sustenta a ideia.
+- **Ponto Forte e Ponto Mais Fraco:** Apresentados separadamente em cada análise (`🟢 Ponto Forte` e `🔴 Ponto Mais Fraco`).
+- **Apenas Sugestões:** A IA atua como leitor crítico e conselheiro — com pontuação estritamente como última prioridade —, mas a decisão final é 100% do autor.
 - **Confirmação Pré-Postagem:** Ao mandar `/end` ou enviar um `.md`, você recebe as duas opiniões e os botões:
   - `[ ✅ Publicar no Blog ]` ➔ Confirma e commita no GitHub.
   - `[ 🗑️ Cancelar ]` ➔ Desiste ou continua ajustando o texto.
-- **Comando `/revisar`:** Disponível a qualquer momento durante `/escrever` ou `/editar` para consultar as duas IAs sob demanda.
+- **Comandos `/analise` e `/revisar`:** `/analise` permite escolher qualquer artigo já publicado para receber as duas análises; `/revisar` permite consultar as IAs durante a escrita ou edição.
 
 ### Áudio e Transcrição (Whisper AI)
 
