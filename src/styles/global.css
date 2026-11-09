@@ -296,9 +296,30 @@ h1 em { color: var(--muted); font-weight: 400; }
   color: var(--ink);
 }
 
-/* --- Atalho para a síntese --- */
+/* --- Atalho para a síntese e tags do cabeçalho --- */
+.post-meta-line {
+  margin: .4rem 0 0;
+  color: var(--muted);
+  font-size: .92rem;
+}
+.post-header-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .35rem .75rem;
+  margin-top: .65rem;
+  font-size: .88rem;
+}
+.post-header-tags a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.post-header-tags a:hover {
+  color: var(--ink);
+}
+
 .skip-to-summary {
-  margin: .4rem 0 1rem;
+  margin: .85rem 0 0;
   font-size: .88rem;
   font-style: italic;
   color: var(--muted);

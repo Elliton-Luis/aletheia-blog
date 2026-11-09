@@ -23,20 +23,26 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
   <article class="post">
     <header class="post-header">
       <a class="back-link icon-link" href="/ensaios/"><Icon name="arrow-left" />Todos os ensaios</a>
-      <p class="eyebrow">{article.data.tags.join(' · ') || 'Caderno pessoal'}</p>
       <p class="post-class" title={`${category.title} · Complexidade: ${category.gravitas.hint}`}>
-        <strong>{category.name}</strong> · {category.formatted} caracteres · Complexidade: {category.gravitas.label} · {category.minutes} min
+        <strong>{category.name}</strong> · {category.formatted} caracteres · {category.gravitas.label} · {category.minutes} min
       </p>
       <h1>{article.data.title}</h1>
       <p class="post-deck">{article.data.description}</p>
+      <p class="post-meta-line">
+        Por <strong>O Eleito</strong> · <time datetime={article.data.date.toISOString()}>{formatDate(article.data.date)}</time>
+      </p>
+      {article.data.tags.length > 0 && (
+        <div class="post-header-tags" aria-label="Assuntos">
+          {article.data.tags.map((tag) => (
+            <a href={`/assuntos/${encodeURIComponent(tag)}/`}>#{tag}</a>
+          ))}
+        </div>
+      )}
       {(category.aphorismus || category.resumo) && (
         <p class="skip-to-summary">
-          Não tem tempo para ler tudo agora?{' '}
-          <a href="#aphorismus" class="skip-summary-link">Ir direto para a síntese ↓</a>
+          <a href="#aphorismus">Não tem tempo para ler tudo agora? Ir direto para a síntese ↓</a>
         </p>
       )}
-      <time datetime={article.data.date.toISOString()}>{formatDate(article.data.date)}</time>
-      <p class="post-author">Por <strong>O Eleito</strong></p>
     </header>
     <div class="post-reading-layout">
       <div class="post-body">

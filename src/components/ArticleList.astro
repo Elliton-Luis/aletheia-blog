@@ -42,7 +42,7 @@ const rows = articles.map((article, index) => {
             <span class="article-mon" aria-hidden="true">{monthShort}</span>
           </time>
           <div class="article-summary">
-            <span class="article-class" title={category.title}>{category.name} · {category.formatted} caracteres · {category.minutes} min</span>
+            <span class="article-class" title={category.title}>{category.name} · {category.formatted} caracteres · {category.gravitas.label} · {category.minutes} min</span>
             <h3>
               {article.data.pinned && (
                 <>

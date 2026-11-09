@@ -97,7 +97,7 @@ const renderedChapters = await Promise.all(
               <span class="toc-roman">Capítulo {roman}</span>
               <span class="toc-title">{article.data.title}</span>
               <span class="toc-dots" aria-hidden="true"></span>
-              <span class="toc-meta">Complexidade: {meta.gravitas.label} · {meta.minutes} min</span>
+              <span class="toc-meta">{meta.gravitas.label} · {meta.minutes} min</span>
             </a>
           </li>
         ))}
@@ -110,7 +110,7 @@ const renderedChapters = await Promise.all(
         <article class="book-chapter" id={`capitulo-${chapterNum}`}>
           <header class="chapter-header">
             <p class="post-class">
-              Capítulo {roman} · <strong>{meta.name}</strong> · {meta.formatted} caracteres · Complexidade: {meta.gravitas.label} · {meta.minutes} min
+              Capítulo {roman} · <strong>{meta.name}</strong> · {meta.formatted} caracteres · {meta.gravitas.label} · {meta.minutes} min
             </p>
             <h2 class="chapter-title">{article.data.title}</h2>
             <p class="post-deck">{article.data.description}</p>
