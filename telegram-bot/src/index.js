@@ -11,26 +11,40 @@
 // Comandos usáveis sem nenhum fluxo em andamento. Os comandos de dentro de
 // cada fluxo (/end, /reescrever, /colar, /pin, /tag, /rascunho) só aparecem
 // quando fazem sentido — ver ajudaContextual().
-const AJUDA_IDLE = `/criar — novo ensaio
+const AJUDA_IDLE = `📖 Ensaios:
+/criar — novo ensaio
 /editar — busca um ensaio pra alterar
 /listar — busca um ensaio só pra ler
-/analise — busca um ensaio para análise crítica com IA
-/deletar — busca um ensaio pra apagar
-/rascunhos — retoma um rascunho salvo
-/link — manda o link do site
+/analise — análise crítica com IA (IA A e IA B)
+/contrapor — debate socrático e objeções duras
+/card — gera card editorial com citação e link
+/deletar — busca um ensaio pra agendar exclusão
 
-🎙️ Mande um áudio a qualquer momento para transcrever em texto.`;
+💡 Caderno de Ideias:
+/ideia <texto> — anota um pensamento rápido
+/ideias — lista e gerencia suas ideias salvas
+/rascunhos — retoma rascunho de escrita
+
+🛠️ Repositório:
+/repo — status e últimos commits do GitHub
+/historico — histórico de versões de um ensaio
+/link — endereço do blog
+
+🎙️ Mande um áudio a qualquer momento para transcrever ou guardar como ideia.`;
 
 function ajudaContextual(session) {
   if (!session) return AJUDA_IDLE;
+  if (session.mode === "guardar-ideia") {
+    return `Anotando ideia no caderno:\nMande um texto ou áudio com o seu pensamento.\n/cancelar — desiste`;
+  }
   if (session.mode === "revisar-publicar") {
     return `Ensaio aguardando confirmação:\n/publicar — publica no blog\n/cancelar — desiste\nOu mande uma mensagem (texto/áudio) para continuar editando.`;
   }
   if (session.mode === "editando") {
-    return `Editando ${session.path}:\n/reescrever — substitui tudo\n/colar — acrescenta no fim\n/revisar — análise editorial com IA\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
+    return `Editando ${session.path}:\n/reescrever — substitui tudo\n/colar — acrescenta no fim\n/revisar — análise editorial com IA\n/contrapor — debate socrático\n/sugerir — sugestões de títulos e descrição\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
   }
   if (session.mode === "escrevendo") {
-    return `Escrevendo "${session.title}":\n/revisar — análise editorial com IA agora\n/end — conclui para análise final e publicação\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
+    return `Escrevendo "${session.title}":\n/revisar — análise editorial com IA\n/contrapor — debate socrático e objeções\n/sugerir — sugestões de títulos e descrição\n/end — conclui para análise final e publicação\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
   }
   // novo-escolha, cabecalho-*
   return `Criando um ensaio novo.\n/cancelar — desiste`;
@@ -51,6 +65,13 @@ const LINK_TIMEOUT = 8_000;
 
 export default {
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+
+    // Rota pública para visualização e renderização do Card editorial
+    if (request.method === "GET" && url.pathname === "/card") {
+      return handleCardRequest(url, env);
+    }
+
     if (request.method !== "POST") return new Response("ok");
 
     // Só aceita chamadas vindas do Telegram (segredo definido no setWebhook)
@@ -145,6 +166,27 @@ async function handleUpdate(update, env) {
     const termo = text.replace(/^\/(analise|analisar)/, "").trim().toLowerCase();
     return startBusca(env, chatId, termo, "analise");
   }
+  if (text?.startsWith("/contrapor") || text?.startsWith("/debate")) {
+    const termo = text.replace(/^\/(contrapor|debate)/, "").trim().toLowerCase();
+    return startBusca(env, chatId, termo, "contrapor");
+  }
+  if (text?.startsWith("/sugerir")) {
+    const termo = text.replace("/sugerir", "").trim().toLowerCase();
+    return startBusca(env, chatId, termo, "sugerir");
+  }
+  if (text?.startsWith("/card")) {
+    const termo = text.replace("/card", "").trim().toLowerCase();
+    return startBusca(env, chatId, termo, "card");
+  }
+  if (text === "/ideia" || text?.startsWith("/ideia ")) {
+    return handleComandoIdeia(env, chatId, text.replace(/^\/ideia/, "").trim());
+  }
+  if (text === "/ideias") return listarIdeias(env, chatId);
+  if (text === "/repo" || text === "/status") return verStatusRepo(env, chatId);
+  if (text?.startsWith("/historico")) {
+    const termo = text.replace("/historico", "").trim().toLowerCase();
+    return startBusca(env, chatId, termo, "historico");
+  }
   if (text?.startsWith("/deletar")) {
     return startBusca(env, chatId, text.replace("/deletar", "").trim().toLowerCase(), "deletar");
   }
@@ -163,7 +205,27 @@ async function handleUpdate(update, env) {
     try {
       const transcricao = await transcreverAudio(env, audioId);
       if (!transcricao) return send(env, chatId, "⚠️ Não consegui identificar nenhuma fala no áudio.");
-      return sendContent(env, chatId, "🎙️ Transcrição:", transcricao);
+
+      const ideaId = Date.now().toString(36);
+      await env.KV.put(
+        `idea:${chatId}:${ideaId}`,
+        JSON.stringify({ id: ideaId, text: transcricao, date: today(), createdAt: Date.now() }),
+        { expirationTtl: TRINTA_DIAS }
+      );
+
+      await sendContent(env, chatId, "🎙️ Transcrição salva no Caderno de Ideias:", transcricao);
+      return tg(env, "sendMessage", {
+        chat_id: chatId,
+        text: "💡 O que deseja fazer com este pensamento?",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "✍️ Transformar em Ensaio", callback_data: `idea:use:${ideaId}` },
+              { text: "🗑️ Descartar Ideia", callback_data: `idea:del:${ideaId}` },
+            ],
+          ],
+        },
+      });
     } catch (e) {
       return send(env, chatId, `⚠️ Erro ao transcrever áudio: ${e.message}`);
     }
@@ -198,6 +260,20 @@ async function handleCallback(cq, env) {
     return send(env, chatId, "🗑️ Publicação cancelada.");
   }
 
+  // Ações do Caderno de Ideias
+  if (data.startsWith("idea:use:")) {
+    const id = data.slice("idea:use:".length);
+    const item = await env.KV.get(`idea:${chatId}:${id}`, "json");
+    if (!item) return send(env, chatId, "Essa ideia não existe mais.");
+    await saveSession(env, chatId, { mode: "cabecalho-title", bodyPronto: item.text });
+    return send(env, chatId, `✍️ Transformando ideia em ensaio:\n\n"${item.text}"\n\nQual o título do ensaio?`);
+  }
+  if (data.startsWith("idea:del:")) {
+    const id = data.slice("idea:del:".length);
+    await env.KV.delete(`idea:${chatId}:${id}`);
+    return send(env, chatId, "🗑️ Ideia removida do caderno.");
+  }
+
   // Trocar de página na lista de ensaios
   if (data.startsWith("pg:")) {
     const page = Number(data.slice(3));
@@ -210,7 +286,7 @@ async function handleCallback(cq, env) {
     });
   }
 
-  // Escolheu um ensaio na lista (/editar, /listar, /analise ou /deletar)
+  // Escolheu um ensaio na lista
   if (data.startsWith("ed:")) {
     const list = await env.KV.get(listKey(chatId), "json");
     const path = list?.paths[Number(data.slice(3))];
@@ -219,6 +295,10 @@ async function handleCallback(cq, env) {
     if (list.acao === "deletar") return scheduleDelete(env, chatId, path);
     if (list.acao === "rascunho") return resumeDraft(env, chatId, path);
     if (list.acao === "analise") return runArticleAnalysis(env, chatId, path);
+    if (list.acao === "contrapor") return runArticleDebate(env, chatId, path);
+    if (list.acao === "sugerir") return runArticleSuggestions(env, chatId, path);
+    if (list.acao === "card") return runGenerateCard(env, chatId, path);
+    if (list.acao === "historico") return runArticleHistory(env, chatId, path);
     return sendForEditing(env, chatId, path);
   }
 }
@@ -306,6 +386,28 @@ async function handleEscrevendo(env, chatId, session, msg, text) {
       return send(env, chatId, "💡 Pode continuar escrevendo ou ajustando. Quando estiver pronto para publicar, mande /end.");
     } catch (e) {
       return send(env, chatId, `⚠️ Não foi possível obter a análise da IA: ${e.message}`);
+    }
+  }
+
+  // Debate socrático sob demanda durante a escrita
+  if (text === "/contrapor" || text === "/debate") {
+    if (!session.body?.trim()) return send(env, chatId, "Escreva algo no ensaio antes de pedir o debate socrático.");
+    try {
+      await enviarDebateSocratico(env, chatId, session.title, session.body);
+      return send(env, chatId, "💡 Pode continuar escrevendo ou ajustando. Quando estiver pronto para publicar, mande /end.");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Não foi possível obter as objeções da IA: ${e.message}`);
+    }
+  }
+
+  // Sugestões de títulos e descrição sob demanda
+  if (text === "/sugerir") {
+    if (!session.body?.trim()) return send(env, chatId, "Escreva algo no ensaio antes de pedir sugestões.");
+    try {
+      await enviarSugestoesEditorial(env, chatId, session.title, session.body);
+      return send(env, chatId, "💡 Continue escrevendo ou mande /end para publicar.");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro nas sugestões: ${e.message}`);
     }
   }
 
@@ -516,6 +618,167 @@ async function enviarRelatoriosDuplos(env, chatId, title, body) {
   );
 }
 
+// =====================================================================
+// Debate Socrático / Oposição (IA A e IA B)
+// =====================================================================
+
+const PROMPT_CONTRAPOR = `Você é um debatedor socrático rigoroso, erudito e implacável do blog Aletheia.
+Sua missão NÃO é elogiar o texto nem ser complacente. Sua função é encontrar as fissuras na tese, os pressupostos não examinados e apresentar os contra-argumentos mais difíceis e desconfortáveis para desafiar o autor a fortalecer seu pensamento.
+
+Contexto e manifesto do autor:
+"${MANIFESTO_AUTOR}"
+
+Estruture sua resposta no seguinte formato conciso (use emojis):
+
+⚔️ A Objeção Fundamental
+(O contra-argumento mais duro e sofisticado contra a tese central. Como o leitor mais crítico e inteligente rebateria esse ponto?)
+
+🌪️ O Paradoxo Oculto
+(Uma contradição interna, consequência indesejada ou ponto cego que o argumento acarreta se levado às últimas consequências)
+
+❓ Perguntas para Blindar o Pensamento
+(2 perguntas cirúrgicas e desafiadoras que o autor precisa responder para tornar o ensaio inatacável)
+
+Responda em português, de forma concisa, afiada e intelectualmente estimulante.`;
+
+async function consultarDebateIaA(env, title, body) {
+  if (env.NVIDIA_API_KEY) {
+    try {
+      const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "nvidia/llama-3.1-nemotron-70b-instruct",
+          messages: [
+            { role: "system", content: PROMPT_CONTRAPOR },
+            { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+          ],
+          temperature: 0.4,
+          max_tokens: 1200,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const texto = data.choices?.[0]?.message?.content?.trim();
+        if (texto) return texto;
+      }
+    } catch {}
+  }
+
+  if (env.AI) {
+    try {
+      const res = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [
+          { role: "system", content: PROMPT_CONTRAPOR },
+          { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+        ],
+        max_tokens: 1200,
+      });
+      if (res?.response) return res.response.trim();
+    } catch {}
+  }
+  return null;
+}
+
+async function consultarDebateIaB(env, title, body) {
+  if (!env.AI) return null;
+  try {
+    const res = await env.AI.run("@cf/qwen/qwen2.5-72b-instruct", {
+      messages: [
+        { role: "system", content: PROMPT_CONTRAPOR },
+        { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+      ],
+      max_tokens: 1200,
+    });
+    if (res?.response) return res.response.trim();
+  } catch {}
+  return null;
+}
+
+async function enviarDebateSocratico(env, chatId, title, body) {
+  await send(env, chatId, "⚔️ Convocando IA A e IA B para o debate socrático...");
+  const [resA, resB] = await Promise.allSettled([
+    consultarDebateIaA(env, title, body),
+    consultarDebateIaB(env, title, body),
+  ]);
+  const textoA = resA.status === "fulfilled" ? resA.value : null;
+  const textoB = resB.status === "fulfilled" ? resB.value : null;
+
+  if (!textoA && !textoB) {
+    throw new Error("Não foi possível consultar as IAs para o debate.");
+  }
+  if (textoA) await sendContent(env, chatId, "⚔️ Objeções da IA A:", textoA);
+  if (textoB) await sendContent(env, chatId, "⚔️ Objeções da IA B:", textoB);
+  await send(env, chatId, "🛡️ Use as objeções acima para refletir e blindar seus argumentos.");
+}
+
+// =====================================================================
+// Sugestões de Título e Descrição
+// =====================================================================
+
+const PROMPT_SUGERIR = `Você é um editor literário experiente do blog Aletheia.
+Com base no texto do ensaio fornecido, gere sugestões refinadas para o título e a descrição do post:
+
+Estruture sua resposta estritamente assim:
+🏷️ Sugestões de Título:
+1. ... (direto e conciso)
+2. ... (provocativo / interrogativo)
+3. ... (poético / conceitual)
+
+📝 Sugestão de Descrição (frase única de máx 140 caracteres, elegante e instigante):
+...
+
+🔖 Tags Recomendadas (separadas por vírgula):
+...
+
+Responda em português.`;
+
+async function enviarSugestoesEditorial(env, chatId, title, body) {
+  await send(env, chatId, "💡 Gerando sugestões editoriais com IA...");
+  let resp = null;
+  if (env.AI) {
+    try {
+      const res = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [
+          { role: "system", content: PROMPT_SUGERIR },
+          { role: "user", content: `Título atual: ${title}\n\nTexto:\n${body}` },
+        ],
+        max_tokens: 600,
+      });
+      resp = res?.response?.trim();
+    } catch {}
+  }
+  if (!resp) throw new Error("Não foi possível gerar sugestões no momento.");
+  return send(env, chatId, `💡 Sugestões Editoriais:\n\n${resp}`);
+}
+
+async function extrairFraseMarcante(env, title, body) {
+  if (env.AI) {
+    try {
+      const res = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        messages: [
+          { role: "system", content: "Você é um editor literário. Extraia do texto a frase mais impactante, memorável e reflexiva. Retorne APENAS a frase exata do texto (ou síntese de no máximo 25 palavras), sem aspas e sem nenhuma explicação." },
+          { role: "user", content: `Título: ${title}\n\nTexto:\n${body.slice(0, 3000)}` },
+        ],
+        max_tokens: 100,
+      });
+      const txt = res?.response?.trim()?.replace(/^["'“]|["'”]$/g, "");
+      if (txt && txt.length > 10 && txt.length < 250) return txt;
+    } catch {}
+  }
+
+  // Fallbacks
+  const blockquote = body.match(/^>\s*(.+)$/m);
+  if (blockquote) return blockquote[1].trim().replace(/^["'“]|["'”]$/g, "");
+  const boldMatch = body.match(/\*\*([^*]+)\*\*/);
+  if (boldMatch && boldMatch[1].length > 20) return boldMatch[1];
+  const linhas = body.split("\n").filter((l) => l.trim().length > 30 && !l.startsWith("#") && !l.startsWith("---"));
+  return linhas[0] || title;
+}
+
 async function prepararRevisaoEConfirmacao(env, chatId, header, body, markdown) {
   const problemas = validateFrontmatter(markdown);
   if (problemas.length) {
@@ -587,8 +850,26 @@ async function startBusca(env, chatId, termo, acao) {
 
   await env.KV.put(listKey(chatId), JSON.stringify({ paths, acao }), { expirationTtl: 3600 });
 
-  const rotulo = { editar: "editar", deletar: "apagar", analise: "analisar" }[acao] ?? "ler";
-  const emoji = { editar: "✏️", deletar: "🗑️", analise: "🧠" }[acao] ?? "🔎";
+  const rotulos = {
+    editar: "editar",
+    deletar: "apagar",
+    analise: "analisar",
+    contrapor: "debater (socrático)",
+    sugerir: "sugerir título/descrição",
+    card: "gerar card editorial",
+    historico: "ver histórico de revisões",
+  };
+  const emojis = {
+    editar: "✏️",
+    deletar: "🗑️",
+    analise: "🧠",
+    contrapor: "⚔️",
+    sugerir: "💡",
+    card: "🎨",
+    historico: "📜",
+  };
+  const rotulo = rotulos[acao] ?? "ler";
+  const emoji = emojis[acao] ?? "🔎";
   await tg(env, "sendMessage", {
     chat_id: chatId,
     text: `${emoji} Qual ensaio você quer ${rotulo}? (${paths.length} encontrado${paths.length > 1 ? "s" : ""})`,
@@ -723,6 +1004,123 @@ async function runArticleAnalysis(env, chatId, path) {
   }
 }
 
+async function runArticleDebate(env, chatId, path) {
+  let file;
+  try {
+    file = await getFile(env, path);
+  } catch (e) {
+    return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
+  }
+
+  const { data: fm, body } = parseFrontmatter(file.text);
+  const title = (fm && extractField(fm, "title")) || fileName(path);
+  const bodyText = (body && body.trim()) || file.text;
+
+  await send(env, chatId, `⚔️ Convocando debate socrático sobre "${title}"... Aguarde alguns instantes.`);
+  try {
+    await enviarDebateSocratico(env, chatId, title, bodyText);
+  } catch (e) {
+    return send(env, chatId, `⚠️ Não foi possível obter as objeções: ${e.message}`);
+  }
+}
+
+async function runArticleSuggestions(env, chatId, path) {
+  let file;
+  try {
+    file = await getFile(env, path);
+  } catch (e) {
+    return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
+  }
+
+  const { data: fm, body } = parseFrontmatter(file.text);
+  const title = (fm && extractField(fm, "title")) || fileName(path);
+  const bodyText = (body && body.trim()) || file.text;
+
+  await send(env, chatId, `💡 Gerando sugestões editoriais para "${title}"...`);
+  try {
+    await enviarSugestoesEditorial(env, chatId, title, bodyText);
+  } catch (e) {
+    return send(env, chatId, `⚠️ Não foi possível obter as sugestões: ${e.message}`);
+  }
+}
+
+async function runArticleHistory(env, chatId, path) {
+  await send(env, chatId, `⏳ Buscando histórico de revisões de "${fileName(path)}"...`);
+  try {
+    const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/commits?path=${path}&per_page=8`, { headers: ghHeaders(env) });
+    if (!res.ok) throw new Error(`GitHub API: ${res.status}`);
+    const commits = await res.json();
+    if (!commits.length) return send(env, chatId, `Nenhum commit encontrado para ${fileName(path)}.`);
+
+    let msg = `📜 Histórico de revisões: ${fileName(path)}\n\n`;
+    for (const c of commits) {
+      const sha = c.sha.slice(0, 7);
+      const title = c.commit.message.split("\n")[0];
+      const autor = c.commit.author?.name || "Autor";
+      const dateStr = c.commit.author?.date;
+      const dataFormatada = dateStr
+        ? new Date(dateStr).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+        : "";
+      msg += `• \`${sha}\` — ${title}\n  _${autor} · ${dataFormatada}_\n\n`;
+    }
+    return send(env, chatId, msg.trim());
+  } catch (e) {
+    return send(env, chatId, `⚠️ Erro ao buscar histórico: ${e.message}`);
+  }
+}
+
+async function runGenerateCard(env, chatId, path) {
+  let file;
+  try {
+    file = await getFile(env, path);
+  } catch (e) {
+    return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
+  }
+
+  const { data: fm, body } = parseFrontmatter(file.text);
+  const title = (fm && extractField(fm, "title")) || fileName(path);
+  const slug = slugFromPath(path);
+  const link = env.SITE_URL ? `${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slug}/` : "";
+
+  await send(env, chatId, `🎨 Gerando card editorial para "${title}"...`);
+
+  const frase = await extrairFraseMarcante(env, title, body || file.text);
+  const cardData = { title, quote: frase, link, slug };
+
+  // Guarda dados no KV para a rota web do card
+  await env.KV.put(`card:${slug}`, JSON.stringify(cardData), { expirationTtl: 60 * 60 * 24 * 30 });
+
+  const workerBase = "https://aletheia-telegram-bot.ellitonluis-dev.workers.dev";
+  const cardWebUrl = `${workerBase}/card?slug=${slug}`;
+  const thumImageUrl = `https://image.thum.io/get/width/1200/crop/630/${cardWebUrl}`;
+
+  const svgContent = buildCardSvg(cardData);
+
+  // 1. Tenta mandar a imagem renderizada como foto inline
+  try {
+    const photoRes = await tg(env, "sendPhoto", {
+      chat_id: chatId,
+      photo: thumImageUrl,
+      caption: `🎨 Card editorial: "${title}"\n\n💬 "${frase}"\n\n🔗 ${link}\n🌐 Card em alta: ${cardWebUrl}`,
+    });
+    const photoData = await photoRes.json();
+    if (!photoData.ok) {
+      await sendDocumentContent(env, chatId, `card-${slug}.svg`, svgContent, `🎨 Card: "${title}"\n\n💬 "${frase}"\n\n🔗 ${link}\n🌐 ${cardWebUrl}`);
+    }
+  } catch {
+    await sendDocumentContent(env, chatId, `card-${slug}.svg`, svgContent, `🎨 Card: "${title}"\n\n💬 "${frase}"\n\n🔗 ${link}\n🌐 ${cardWebUrl}`);
+  }
+
+  // 2. Envia também o arquivo vetorial .SVG para alta fidelidade
+  await sendDocumentContent(
+    env,
+    chatId,
+    `card-${slug}.svg`,
+    svgContent,
+    `📐 Arquivo vetorial SVG (alta definição para redes sociais, Canva ou impressão).`
+  );
+}
+
 async function sendForEditing(env, chatId, path) {
   let file;
   try {
@@ -831,6 +1229,32 @@ async function handleEditando(env, chatId, session, msg, text) {
     }
   }
 
+  // Debate socrático sob demanda durante a edição
+  if (text === "/contrapor" || text === "/debate") {
+    const alvo = session.pendente ?? session.original;
+    const { data: fm, body } = parseFrontmatter(alvo);
+    const titulo = fm ? extractField(fm, "title") : fileName(session.path);
+    try {
+      await enviarDebateSocratico(env, chatId, titulo || "Ensaio", body || alvo);
+      return send(env, chatId, "💡 Agora use /colar (adiciona ao fim) ou /reescrever (substitui tudo).");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Não foi possível obter as objeções da IA: ${e.message}`);
+    }
+  }
+
+  // Sugestões de títulos e descrição sob demanda durante a edição
+  if (text === "/sugerir") {
+    const alvo = session.pendente ?? session.original;
+    const { data: fm, body } = parseFrontmatter(alvo);
+    const titulo = fm ? extractField(fm, "title") : fileName(session.path);
+    try {
+      await enviarSugestoesEditorial(env, chatId, titulo || "Ensaio", body || alvo);
+      return send(env, chatId, "💡 Use /colar ou /reescrever quando quiser salvar as alterações.");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro nas sugestões: ${e.message}`);
+    }
+  }
+
   // Chegou um conteúdo novo (texto, áudio ou arquivo): guarda como pendente e DÁ FEEDBACK IMEDIATO ao usuário!
   let conteudo = text;
   const audioId = getAudioFileId(msg);
@@ -920,11 +1344,374 @@ async function sendContent(env, chatId, cabecalho, texto) {
   await fetch(`https://api.telegram.org/bot${env.TELEGRAM_TOKEN}/sendDocument`, { method: "POST", body: form });
 }
 
+async function sendDocumentContent(env, chatId, filename, texto, caption = "") {
+  const form = new FormData();
+  form.append("chat_id", String(chatId));
+  if (caption) form.append("caption", caption);
+  form.append("document", new File([texto], filename, { type: filename.endsWith(".svg") ? "image/svg+xml" : "text/markdown" }));
+  await fetch(`https://api.telegram.org/bot${env.TELEGRAM_TOKEN}/sendDocument`, { method: "POST", body: form });
+}
+
+// =====================================================================
+// Caderno de Ideias
+// =====================================================================
+
+async function handleComandoIdeia(env, chatId, texto) {
+  if (texto) {
+    const ideaId = Date.now().toString(36);
+    await env.KV.put(
+      `idea:${chatId}:${ideaId}`,
+      JSON.stringify({ id: ideaId, text: texto, date: today(), createdAt: Date.now() }),
+      { expirationTtl: 60 * 60 * 24 * 90 }
+    );
+    return send(env, chatId, `💡 Ideia salva no seu caderno!\n\n"${texto}"\n\nUse /ideias para listar todas ou transformá-las em ensaio.`);
+  }
+
+  await saveSession(env, chatId, { mode: "guardar-ideia" });
+  return send(env, chatId, "💡 Mande o texto ou áudio da sua ideia (ou /cancelar para sair):");
+}
+
+async function handleGuardarIdeia(env, chatId, msg, text) {
+  let conteudo = text;
+  const audioId = getAudioFileId(msg);
+  if (audioId) {
+    await send(env, chatId, "🎙️ Transcrevendo áudio da ideia...");
+    try {
+      conteudo = await transcreverAudio(env, audioId);
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro ao transcrever áudio: ${e.message}`);
+    }
+  }
+  if (!conteudo?.trim()) {
+    return send(env, chatId, "Mande um texto ou áudio para salvar a ideia, ou /cancelar.");
+  }
+  const ideaId = Date.now().toString(36);
+  await env.KV.put(
+    `idea:${chatId}:${ideaId}`,
+    JSON.stringify({ id: ideaId, text: conteudo.trim(), date: today(), createdAt: Date.now() }),
+    { expirationTtl: 60 * 60 * 24 * 90 }
+  );
+  await env.KV.delete(sessionKey(chatId));
+  return send(env, chatId, `💡 Ideia salva no seu caderno!\n\n"${conteudo.trim()}"\n\nUse /ideias para ver todas ou transformá-las em ensaio.`);
+}
+
+async function listarIdeias(env, chatId) {
+  const lista = await env.KV.list({ prefix: `idea:${chatId}:` });
+  if (!lista.keys.length) {
+    return send(env, chatId, "💡 Seu caderno de ideias está vazio no momento.\nEnvie /ideia <sua reflexão> ou mande um áudio a qualquer momento.");
+  }
+
+  const ideias = [];
+  for (const key of lista.keys) {
+    const d = await env.KV.get(key.name, "json");
+    if (d) ideias.push(d);
+  }
+  ideias.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  if (!ideias.length) {
+    return send(env, chatId, "💡 Seu caderno de ideias está vazio no momento.");
+  }
+
+  let msg = `💡 Caderno de Ideias (${ideias.length} salva${ideias.length > 1 ? "s" : ""}):\n\n`;
+  const rows = [];
+  ideias.slice(0, 10).forEach((item, i) => {
+    const trecho = item.text.replace(/\n+/g, " ").slice(0, 80);
+    msg += `${i + 1}. "${trecho}${item.text.length > 80 ? "..." : ""}"\n📅 _${item.date}_\n\n`;
+    rows.push([
+      { text: `✍️ #${i + 1} Criar Ensaio`, callback_data: `idea:use:${item.id}` },
+      { text: `🗑️ #${i + 1}`, callback_data: `idea:del:${item.id}` },
+    ]);
+  });
+
+  return tg(env, "sendMessage", {
+    chat_id: chatId,
+    text: msg.trim(),
+    reply_markup: { inline_keyboard: rows },
+  });
+}
+
+// =====================================================================
+// Repositório GitHub
+// =====================================================================
+
+async function verStatusRepo(env, chatId) {
+  await send(env, chatId, "⏳ Buscando informações do repositório no GitHub...");
+  try {
+    const [commitsRes, posts] = await Promise.all([
+      fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/commits?sha=${env.GITHUB_BRANCH}&per_page=5`, { headers: ghHeaders(env) }),
+      listPosts(env).catch(() => []),
+    ]);
+
+    if (!commitsRes.ok) throw new Error(`GitHub API: ${commitsRes.status}`);
+    const commits = await commitsRes.json();
+
+    let msg = `📦 Repositório: ${env.GITHUB_REPO}\n🌿 Branch: \`${env.GITHUB_BRANCH}\` · 📚 ${posts.length} ensaios\n🔗 ${env.SITE_URL || "Site configurado"}\n\n📜 Últimos 5 Commits:\n`;
+    for (const c of commits) {
+      const sha = c.sha.slice(0, 7);
+      const title = c.commit.message.split("\n")[0].slice(0, 60);
+      const autor = c.commit.author?.name || "Autor";
+      const dateStr = c.commit.author?.date;
+      const dataFormatada = dateStr
+        ? new Date(dateStr).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+        : "";
+      msg += `\n• \`${sha}\` — ${title}\n  _${autor}${dataFormatada ? ` em ${dataFormatada}` : ""}_\n`;
+    }
+    msg += `\n💡 Use /historico para ver os commits de um ensaio específico.`;
+    return send(env, chatId, msg);
+  } catch (e) {
+    return send(env, chatId, `⚠️ Erro ao consultar repositório: ${e.message}`);
+  }
+}
+
+// =====================================================================
+// Card Editorial (HTML e SVG)
+// =====================================================================
+
+function wrapSvgText(text, maxCharsPerLine = 46) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let current = "";
+  for (const w of words) {
+    if ((current + " " + w).trim().length > maxCharsPerLine) {
+      if (current) lines.push(current);
+      current = w;
+    } else {
+      current = current ? current + " " + w : w;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+function escapeXml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildCardSvg({ title, quote, link }) {
+  const lines = wrapSvgText(quote, 46);
+  const tspans = lines.map((l, i) => `<tspan x="90" dy="${i === 0 ? '0' : '1.45em'}">${escapeXml(l)}</tspan>`).join("\n      ");
+  const cleanLink = link.replace(/^https?:\/\//, "");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141820" />
+      <stop offset="100%" stop-color="#090b0e" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="24" y="24" width="1152" height="582" stroke="#e0a96d" stroke-opacity="0.3" stroke-width="1.5" />
+  
+  <text x="80" y="90" font-family="Georgia, serif" font-size="20" font-weight="bold" fill="#e0a96d" letter-spacing="4">ALETHEIA</text>
+  <line x1="220" y1="84" x2="280" y2="84" stroke="#e0a96d" stroke-opacity="0.5" stroke-width="1" />
+  <text x="1120" y="90" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="#94a3b8" letter-spacing="2">CADERNO DE ENSAIOS</text>
+  
+  <text x="75" y="240" font-family="Georgia, serif" font-size="110" fill="#e0a96d" fill-opacity="0.3">“</text>
+  
+  <text x="90" y="260" font-family="Georgia, serif" font-size="36" font-style="italic" fill="#f8fafc">
+    ${tspans}
+  </text>
+  
+  <line x1="80" y1="520" x2="1120" y2="520" stroke="#ffffff" stroke-opacity="0.1" stroke-width="1" />
+  
+  <text x="80" y="555" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#64748b" letter-spacing="1.5">ENSAIO</text>
+  <text x="80" y="582" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="bold" fill="#f1f5f9">${escapeXml(title)}</text>
+  
+  <text x="1120" y="555" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#64748b" letter-spacing="1.5">LEIA NO BLOG</text>
+  <text x="1120" y="582" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="600" fill="#e0a96d">${escapeXml(cleanLink)}</text>
+</svg>`;
+}
+
+async function handleCardRequest(url, env) {
+  const slug = url.searchParams.get("slug");
+  if (!slug) return new Response("Informe ?slug=nome-do-ensaio", { status: 400 });
+
+  let card = await env.KV.get(`card:${slug}`, "json");
+  if (!card) {
+    try {
+      const posts = await listPosts(env);
+      const matched = posts.find((p) => slugFromPath(p) === slug);
+      if (!matched) return new Response("Ensaio não encontrado", { status: 404 });
+      const file = await getFile(env, matched);
+      const { data: fm } = parseFrontmatter(file.text);
+      const title = (fm && extractField(fm, "title")) || slug;
+      const quote = (fm && extractField(fm, "description")) || title;
+      card = { title, quote, link: `${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slug}/`, slug };
+    } catch (e) {
+      return new Response(`Erro ao carregar ensaio: ${e.message}`, { status: 500 });
+    }
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(card.title)} · Aletheia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400;1,6..72,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1200px;
+      height: 630px;
+      background: radial-gradient(circle at 15% 20%, #161b24 0%, #0a0c10 100%);
+      color: #f1f5f9;
+      font-family: 'Newsreader', Georgia, serif;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 64px 80px;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 24px;
+      border: 1px solid rgba(224, 169, 109, 0.28);
+      pointer-events: none;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #e0a96d;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand::after {
+      content: '';
+      height: 1px;
+      width: 60px;
+      background: rgba(224, 169, 109, 0.5);
+    }
+    .meta-tag {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .quote-wrap {
+      position: relative;
+      margin: auto 0;
+      padding-left: 20px;
+    }
+    .quote-mark {
+      font-family: 'Cinzel', serif;
+      font-size: 110px;
+      line-height: 0.4;
+      color: rgba(224, 169, 109, 0.35);
+      position: absolute;
+      top: -30px;
+      left: -20px;
+    }
+    .quote-text {
+      font-size: 38px;
+      line-height: 1.42;
+      font-weight: 400;
+      font-style: italic;
+      color: #f8fafc;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      max-width: 1040px;
+      position: relative;
+      z-index: 2;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+    }
+    .title-area {
+      font-family: 'Inter', sans-serif;
+    }
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .title {
+      font-size: 19px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+    .link-area {
+      font-family: 'Inter', sans-serif;
+      text-align: right;
+    }
+    .link {
+      font-size: 15px;
+      font-weight: 500;
+      color: #e0a96d;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">Aletheia</div>
+    <div class="meta-tag">Caderno de Ensaios</div>
+  </div>
+  <div class="quote-wrap">
+    <div class="quote-mark">“</div>
+    <div class="quote-text">${escapeHtml(card.quote)}</div>
+  </div>
+  <div class="footer">
+    <div class="title-area">
+      <div class="label">Ensaio</div>
+      <div class="title">${escapeHtml(card.title)}</div>
+    </div>
+    <div class="link-area">
+      <div class="label">Leia no blog</div>
+      <div class="link">${escapeHtml(card.link.replace(/^https?:\/\//, ""))}</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  return new Response(html, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
+}
+
 // =====================================================================
 // Roteia mensagens para quem está no meio de um fluxo (sessão ativa)
 // =====================================================================
 
 async function handleSessionMessage(env, chatId, session, msg, text) {
+  if (session.mode === "guardar-ideia") return handleGuardarIdeia(env, chatId, msg, text);
   if (session.mode === "novo-escolha") {
     if (msg.document) return handleNewFromFile(env, chatId, msg);
     if (text === "/escrever") {

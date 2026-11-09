@@ -16,14 +16,25 @@ o conteúdo dos ensaios segue as mesmas regras.
 ## Comandos
 
 ```
+📖 Ensaios:
 /criar      — novo ensaio
 /editar     — busca um ensaio e altera
 /listar     — busca um ensaio só para ler
-/analise    — busca um ensaio para análise crítica com IA (IA A e IA B)
+/analise    — análise crítica com IA (IA A e IA B) com nota e pontos
+/contrapor  — debate socrático com objeções e paradoxos
+/card       — gera card editorial com citação, link e título
 /deletar    — busca um ensaio e agenda a exclusão (20 minutos)
-/rascunhos  — retoma um ensaio salvo com /rascunho (durante o /escrever)
+
+💡 Caderno de Ideias:
+/ideia      — anota um pensamento ou insight rápido
+/ideias     — gerencia ideias salvas (com botão para criar ensaio)
+/rascunhos  — retoma um ensaio salvo com /rascunho
+
+🛠️ Repositório:
+/repo       — status geral e últimos commits do GitHub
+/historico  — histórico de revisões de um ensaio
 /link       — manda o link do site
-/cancelar   — desiste do que estiver em andamento (inclusive uma exclusão agendada)
+/cancelar   — desiste do que estiver em andamento (inclusive uma exclusão)
 ```
 
 O bot é direto: não existe uma etapa genérica de "confirmar antes de publicar".
