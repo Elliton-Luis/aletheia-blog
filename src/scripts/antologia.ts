@@ -36,7 +36,12 @@ export function initAntologia() {
   const colophonCount = document.querySelector<HTMLElement>('#colophon-count');
 
   const btnExportPdf = document.querySelector<HTMLButtonElement>('#btn-export-pdf');
+  const btnPrintAntologia = document.querySelector<HTMLButtonElement>('#btn-print-antologia');
   const btnExportBooklet = document.querySelector<HTMLButtonElement>('#btn-export-booklet');
+  const btnToggleBooklet = document.querySelector<HTMLButtonElement>('#btn-toggle-booklet');
+  const btnToggleCustomizer = document.querySelector<HTMLButtonElement>('#btn-toggle-customizer');
+  const customizerBtnLabel = document.querySelector<HTMLElement>('#customizer-btn-label');
+  const customizerPanel = document.querySelector<HTMLElement>('#customizer-panel');
   const bookletPanel = document.querySelector<HTMLElement>('#booklet-panel');
   const btnPrintA5 = document.querySelector<HTMLButtonElement>('#btn-print-a5');
   const bookletDropzone = document.querySelector<HTMLElement>('#booklet-dropzone');
@@ -60,6 +65,9 @@ export function initAntologia() {
     }
     if (colophonCount) {
       colophonCount.textContent = `${count} ${count === 1 ? 'ensaio seminal' : 'ensaios seminais'}`;
+    }
+    if (customizerBtnLabel) {
+      customizerBtnLabel.textContent = `Personalizar Livrinho (${count}) ▾`;
     }
 
     if (emptyBookNote) {
@@ -161,18 +169,34 @@ export function initAntologia() {
     updateBookView();
   });
 
-  // Opção 1: Baixar PDF (A4 Sequencial)
-  btnExportPdf?.addEventListener('click', () => {
+  // Impressão direta da Antologia (PDF A4 Sequencial)
+  const triggerPrintA4 = () => {
     document.body.classList.remove('print-mode-a5');
     window.print();
-  });
+  };
+  btnExportPdf?.addEventListener('click', triggerPrintA4);
+  btnPrintAntologia?.addEventListener('click', triggerPrintA4);
 
-  // Opção 2: Alternar painel Livreto A5
-  btnExportBooklet?.addEventListener('click', () => {
+  // Alternar painel Livreto A5
+  const toggleBooklet = () => {
     if (bookletPanel) {
       bookletPanel.hidden = !bookletPanel.hidden;
+      btnToggleBooklet?.setAttribute('aria-expanded', String(!bookletPanel.hidden));
       if (!bookletPanel.hidden) {
-        bookletPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        bookletPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  };
+  btnExportBooklet?.addEventListener('click', toggleBooklet);
+  btnToggleBooklet?.addEventListener('click', toggleBooklet);
+
+  // Alternar painel de Personalização
+  btnToggleCustomizer?.addEventListener('click', () => {
+    if (customizerPanel) {
+      customizerPanel.hidden = !customizerPanel.hidden;
+      btnToggleCustomizer.setAttribute('aria-expanded', String(!customizerPanel.hidden));
+      if (!customizerPanel.hidden) {
+        customizerPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
   });

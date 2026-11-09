@@ -760,22 +760,22 @@ async function extrairFraseMarcante(env, title, body) {
     try {
       const res = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [
-          { role: "system", content: "Você é um editor literário do blog Aletheia. Extraia OBRIGATORIAMENTE uma frase ou conjunto de frases literais contidas no próprio texto do ensaio, que represente a essência do pensamento do autor. NUNCA invente nem parafraseie: use estritamente as palavras do autor tal como constam no texto. Retorne APENAS o trecho exato extraído do texto, sem aspas e sem nenhuma explicação." },
+          { role: "system", content: "Você é um editor literário do blog Aletheia. Extraia OBRIGATORIAMENTE uma frase curta e marcante (máximo de 1 a 2 linhas curtas, até 120 caracteres) contida literalmente no próprio texto do ensaio. Ela NÃO deve ser um resumo do texto, e sim uma citação forte, impactante e instigante que desperte curiosidade imediata e mostre que o texto é interessante. NUNCA invente nem parafraseie: use estritamente as palavras do autor tal como constam no texto. Retorne APENAS o trecho exato extraído do texto, sem aspas e sem nenhuma explicação." },
           { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body.slice(0, 3000)}` },
         ],
-        max_tokens: 100,
+        max_tokens: 60,
       });
       const txt = res?.response?.trim()?.replace(/^["'“]|["'”]$/g, "");
-      if (txt && txt.length > 10 && txt.length < 250) return txt;
+      if (txt && txt.length > 10 && txt.length < 160) return txt;
     } catch {}
   }
 
   // Fallbacks
   const blockquote = body.match(/^>\s*(.+)$/m);
-  if (blockquote) return blockquote[1].trim().replace(/^["'“]|["'”]$/g, "");
+  if (blockquote && blockquote[1].length < 160) return blockquote[1].trim().replace(/^["'“]|["'”]$/g, "");
   const boldMatch = body.match(/\*\*([^*]+)\*\*/);
-  if (boldMatch && boldMatch[1].length > 20) return boldMatch[1];
-  const linhas = body.split("\n").filter((l) => l.trim().length > 30 && !l.startsWith("#") && !l.startsWith("---"));
+  if (boldMatch && boldMatch[1].length > 15 && boldMatch[1].length < 150) return boldMatch[1];
+  const linhas = body.split("\n").filter((l) => l.trim().length > 25 && l.trim().length < 140 && !l.startsWith("#") && !l.startsWith("---"));
   return linhas[0] || title;
 }
 
@@ -1098,7 +1098,7 @@ async function runGenerateCard(env, chatId, path) {
 
   const workerBase = "https://aletheia-telegram-bot.ellitonluis-dev.workers.dev";
   const cardWebUrl = `${workerBase}/card?slug=${slug}`;
-  const thumImageUrl = `https://image.thum.io/get/width/1200/crop/630/${cardWebUrl}`;
+  const thumImageUrl = `https://image.thum.io/get/width/1080/crop/1920/${cardWebUrl}`;
 
   const svgContent = buildCardSvg(cardData);
 
@@ -1578,38 +1578,46 @@ function escapeHtml(s) {
 }
 
 function buildCardSvg({ title, quote, link }) {
-  const lines = wrapSvgText(quote, 46);
-  const tspans = lines.map((l, i) => `<tspan x="90" dy="${i === 0 ? '0' : '1.45em'}">${escapeXml(l)}</tspan>`).join("\n      ");
-  const cleanLink = link.replace(/^https?:\/\//, "");
+  const lines = wrapSvgText(quote, 26);
+  const tspans = lines.map((l, i) => `<tspan x="100" dy="${i === 0 ? '0' : '1.5em'}">${escapeXml(l)}</tspan>`).join("\n      ");
+  const titleLines = wrapSvgText(title, 30);
+  const titleTspans = titleLines.map((l, i) => `<tspan x="100" dy="${i === 0 ? '0' : '1.35em'}">${escapeXml(l)}</tspan>`).join("\n      ");
+  const cleanLink = link.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#141820" />
-      <stop offset="100%" stop-color="#090b0e" />
+      <stop offset="50%" stop-color="#0f1218" />
+      <stop offset="100%" stop-color="#080a0d" />
     </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)" />
-  <rect x="24" y="24" width="1152" height="582" stroke="#e0a96d" stroke-opacity="0.3" stroke-width="1.5" />
+  <rect width="1080" height="1920" fill="url(#bg)" />
+  <rect x="44" y="44" width="992" height="1832" stroke="#e0a96d" stroke-opacity="0.25" stroke-width="1.5" />
   
-  <text x="80" y="90" font-family="Georgia, serif" font-size="20" font-weight="bold" fill="#e0a96d" letter-spacing="4">ALETHEIA</text>
-  <line x1="220" y1="84" x2="280" y2="84" stroke="#e0a96d" stroke-opacity="0.5" stroke-width="1" />
-  <text x="1120" y="90" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="#94a3b8" letter-spacing="2">CADERNO DE ENSAIOS</text>
+  <!-- Header Topo -->
+  <text x="100" y="180" font-family="Georgia, serif" font-size="28" font-weight="bold" fill="#e0a96d" letter-spacing="6">ALETHEIA</text>
+  <line x1="300" y1="172" x2="380" y2="172" stroke="#e0a96d" stroke-opacity="0.4" stroke-width="1.5" />
+  <text x="980" y="180" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#94a3b8" letter-spacing="3">CADERNO DE ENSAIOS</text>
   
-  <text x="75" y="240" font-family="Georgia, serif" font-size="110" fill="#e0a96d" fill-opacity="0.3">“</text>
+  <!-- Aspas e Citação Central -->
+  <text x="85" y="700" font-family="Georgia, serif" font-size="240" fill="#e0a96d" fill-opacity="0.2">“</text>
   
-  <text x="90" y="260" font-family="Georgia, serif" font-size="36" font-style="italic" fill="#f8fafc">
+  <text x="100" y="780" font-family="Georgia, serif" font-size="52" font-style="italic" fill="#f8fafc">
     ${tspans}
   </text>
   
-  <line x1="80" y1="520" x2="1120" y2="520" stroke="#ffffff" stroke-opacity="0.1" stroke-width="1" />
+  <!-- Linha divisória e Rodapé -->
+  <line x1="100" y1="1620" x2="980" y2="1620" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1" />
   
-  <text x="80" y="555" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#64748b" letter-spacing="1.5">ENSAIO</text>
-  <text x="80" y="582" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="bold" fill="#f1f5f9">${escapeXml(title)}</text>
+  <text x="100" y="1670" font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="600" fill="#64748b" letter-spacing="2">ENSAIO FILOSÓFICO</text>
+  <text x="100" y="1720" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="bold" fill="#f1f5f9">
+    ${titleTspans}
+  </text>
   
-  <text x="1120" y="555" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#64748b" letter-spacing="1.5">LEIA NO BLOG</text>
-  <text x="1120" y="582" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="600" fill="#e0a96d">${escapeXml(cleanLink)}</text>
+  <text x="980" y="1770" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#64748b" letter-spacing="2">LEIA NO BLOG</text>
+  <text x="980" y="1810" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#e0a96d">${escapeXml(cleanLink)}</text>
 </svg>`;
 }
 
@@ -1638,15 +1646,15 @@ async function handleCardRequest(url, env) {
 <head>
   <meta charset="utf-8">
   <title>${escapeHtml(card.title)} · Aletheia</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=1080, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400;1,6..72,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      width: 1200px;
-      height: 630px;
+      width: 1080px;
+      height: 1920px;
       background: radial-gradient(circle at 15% 20%, #161b24 0%, #0a0c10 100%);
       color: #f1f5f9;
       font-family: 'Newsreader', Georgia, serif;
@@ -1655,12 +1663,12 @@ async function handleCardRequest(url, env) {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 64px 80px;
+      padding: 120px 90px;
     }
     body::before {
       content: '';
       position: absolute;
-      inset: 24px;
+      inset: 44px;
       border: 1px solid rgba(224, 169, 109, 0.28);
       pointer-events: none;
     }
@@ -1671,24 +1679,24 @@ async function handleCardRequest(url, env) {
     }
     .brand {
       font-family: 'Cinzel', serif;
-      font-size: 20px;
+      font-size: 26px;
       letter-spacing: 0.28em;
       text-transform: uppercase;
       color: #e0a96d;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 16px;
     }
     .brand::after {
       content: '';
       height: 1px;
-      width: 60px;
+      width: 70px;
       background: rgba(224, 169, 109, 0.5);
     }
     .meta-tag {
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      letter-spacing: 0.12em;
+      font-size: 16px;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
       color: #94a3b8;
     }
@@ -1699,21 +1707,21 @@ async function handleCardRequest(url, env) {
     }
     .quote-mark {
       font-family: 'Cinzel', serif;
-      font-size: 110px;
+      font-size: 200px;
       line-height: 0.4;
       color: rgba(224, 169, 109, 0.35);
       position: absolute;
-      top: -30px;
+      top: -70px;
       left: -20px;
     }
     .quote-text {
-      font-size: 38px;
-      line-height: 1.42;
+      font-size: 52px;
+      line-height: 1.5;
       font-weight: 400;
       font-style: italic;
       color: #f8fafc;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-      max-width: 1040px;
+      text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      max-width: 900px;
       position: relative;
       z-index: 2;
     }
@@ -1721,34 +1729,35 @@ async function handleCardRequest(url, env) {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding-top: 36px;
     }
     .title-area {
       font-family: 'Inter', sans-serif;
     }
     .label {
-      font-size: 12px;
+      font-size: 15px;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.15em;
       color: #64748b;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
     }
     .title {
-      font-size: 19px;
-      font-weight: 600;
+      font-size: 32px;
+      font-weight: 700;
       color: #f1f5f9;
+      line-height: 1.3;
+      max-width: 620px;
     }
     .link-area {
       font-family: 'Inter', sans-serif;
       text-align: right;
     }
     .link {
-      font-size: 15px;
-      font-weight: 500;
+      font-size: 22px;
+      font-weight: 600;
       color: #e0a96d;
       text-decoration: none;
-      letter-spacing: 0.02em;
     }
   </style>
 </head>
@@ -1763,12 +1772,12 @@ async function handleCardRequest(url, env) {
   </div>
   <div class="footer">
     <div class="title-area">
-      <div class="label">Ensaio</div>
+      <div class="label">Ensaio Filosófico</div>
       <div class="title">${escapeHtml(card.title)}</div>
     </div>
     <div class="link-area">
-      <div class="label">Leia no blog</div>
-      <div class="link">${escapeHtml(card.link.replace(/^https?:\/\//, ""))}</div>
+      <div class="label">Leia no Blog</div>
+      <a href="${escapeHtml(card.link)}" class="link">${escapeHtml(card.link.replace(/^https?:\/\//, "").replace(/\/$/, ""))}</a>
     </div>
   </div>
 </body>

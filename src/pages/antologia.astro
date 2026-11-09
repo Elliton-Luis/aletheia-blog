@@ -68,13 +68,31 @@ const recentMetaList = recentArticles.map((article) => {
   <header class="page-heading antologia-page-heading">
     <p class="eyebrow">Edição Encadernada</p>
     <h1>Antologia</h1>
-    <p>Reúna até 10 ensaios em um volume único. Leia na tela, baixe em PDF ou produza seu Livreto A5 encadernado por dobra e grampo.</p>
+    <p>Volume único reunindo os ensaios de Aletheia para leitura e encadernação.</p>
+
+    <!-- Barra de Ações Limpa e Direta -->
+    <div class="antologia-toolbar" role="toolbar" aria-label="Ações da Antologia">
+      <button type="button" class="antologia-action-btn primary" id="btn-print-antologia">
+        <Icon name="printer" />
+        <span>Imprimir Antologia (PDF)</span>
+      </button>
+
+      <button type="button" class="antologia-action-btn" id="btn-toggle-booklet" aria-expanded="false">
+        <Icon name="book" />
+        <span>Livreto A5 (Dobra)</span>
+      </button>
+
+      <button type="button" class="antologia-action-btn" id="btn-toggle-customizer" aria-expanded="false">
+        <Icon name="tag" />
+        <span id="customizer-btn-label">Personalizar Livrinho ({defaultSelectedSlugs.size}) ▾</span>
+      </button>
+    </div>
   </header>
 
   <!-- =====================================================================
-       PAINEL MONTE SEU LIVRINHO
+       PAINEL DESDOBRÁVEL: MONTE SEU LIVRINHO (Oculto por padrão para limpeza total)
        ===================================================================== -->
-  <section class="book-builder" id="book-builder" aria-label="Personalização da Antologia">
+  <section class="book-builder customizer-panel" id="customizer-panel" aria-label="Personalização da Antologia" hidden>
     <div class="book-builder-header">
       <div class="builder-title-group">
         <p class="eyebrow icon-link"><Icon name="book" />Personalize sua Edição</p>
@@ -124,59 +142,41 @@ const recentMetaList = recentArticles.map((article) => {
         ))}
       </ul>
     </div>
+  </section>
 
-    <!-- Botões de Exportação / Download -->
-    <div class="export-options">
-      <span class="export-title">Opções de Download e Impressão</span>
-      <div class="export-buttons">
-        <button type="button" class="export-btn export-pdf" id="btn-export-pdf">
-          <Icon name="printer" />
-          <span>Baixar PDF (A4 Sequencial)</span>
-        </button>
+  <!-- =====================================================================
+       PAINEL DESDOBRÁVEL: LIVRETO A5 (Oculto por padrão para limpeza total)
+       ===================================================================== -->
+  <section class="booklet-panel" id="booklet-panel" aria-label="Opções do Livreto A5" hidden>
+    <h3 class="booklet-panel-title icon-link"><Icon name="book" />Como funciona a imposição do Livreto A5</h3>
+    <p class="booklet-explanation">
+      Em uma folha A4 em paisagem cabem duas páginas A5 lado a lado. Ao dobrar ao meio, as páginas precisam estar ordenadas de forma especial:
+    </p>
+    <div class="booklet-diagram">
+      <strong>Ordem das Páginas nas Folhas A4:</strong>
+      <ol>
+        <li><strong>Folha 1 (Frente):</strong> Contracapa (última página) na esquerda · Capa frontal na direita</li>
+        <li><strong>Folha 1 (Verso):</strong> Página 2 (Prefácio) na esquerda · Penúltima página na direita</li>
+        <li><strong>Folha 2 (Frente):</strong> Antepenúltima página na esquerda · Página 3 na direita</li>
+        <li>... e assim por diante até se encontrarem no centro da dobra!</li>
+      </ol>
+    </div>
 
-        <button type="button" class="export-btn export-booklet" id="btn-export-booklet">
-          <Icon name="book" />
-          <span>Livreto A5 (Dobra & Grampo)</span>
-        </button>
-      </div>
-      <p class="export-hint">
-        <strong>PDF (A4 Sequencial):</strong> Leitura fluida página por página, ideal para telas, tablets ou impressão tradicional.<br/>
-        <strong>Livreto A5 (Dobra & Grampo):</strong> Diagramação com imposição de páginas para dobrar ao meio e montar seu livro de bolso.
-      </p>
+    <p class="booklet-explanation">
+      <strong>Conversor Automático:</strong> Baixe primeiro o seu arquivo via botão <em>«Imprimir Antologia (PDF)»</em> acima e depois arraste-o ou selecione-o na caixa abaixo. Nosso algoritmo organizará as páginas na ordem exata de imposição e baixará o seu <strong>Livreto A5 pronto para impressão frente e verso</strong>:
+    </p>
 
-      <!-- Painel Desdobrável do Livreto A5 -->
-      <div class="booklet-panel" id="booklet-panel" hidden>
-        <h3 class="booklet-panel-title icon-link"><Icon name="book" />Como funciona a imposição do Livreto A5</h3>
-        <p class="booklet-explanation">
-          Em uma folha A4 em paisagem cabem duas páginas A5 lado a lado. Ao dobrar ao meio, as páginas precisam estar ordenadas de forma especial:
-        </p>
-        <div class="booklet-diagram">
-          <strong>Ordem das Páginas nas Folhas A4:</strong>
-          <ol>
-            <li><strong>Folha 1 (Frente):</strong> Contracapa (última página) na esquerda · Capa frontal na direita</li>
-            <li><strong>Folha 1 (Verso):</strong> Página 2 (Prefácio) na esquerda · Penúltima página na direita</li>
-            <li><strong>Folha 2 (Frente):</strong> Antepenúltima página na esquerda · Página 3 na direita</li>
-            <li>... e assim por diante até se encontrarem no centro da dobra!</li>
-          </ol>
-        </div>
+    <div class="booklet-dropzone" id="booklet-dropzone">
+      <input type="file" id="booklet-file-input" accept="application/pdf" hidden />
+      <p class="dropzone-text icon-link"><Icon name="printer" />Clique aqui ou arraste seu PDF para gerar o Livreto A5</p>
+      <p class="dropzone-sub">Processamento 100% no seu navegador com imposição vetorial exata</p>
+    </div>
 
-        <p class="booklet-explanation">
-          <strong>Conversor Automático:</strong> Baixe primeiro o seu arquivo via <em>«Baixar PDF (A4 Sequencial)»</em> e depois arraste-o ou selecione-o na caixa abaixo. Nosso algoritmo organizará as páginas na ordem exata de imposição e baixará o seu <strong>Livreto A5 pronto para impressão frente e verso</strong>:
-        </p>
+    <div class="booklet-status" id="booklet-status" hidden></div>
 
-        <div class="booklet-dropzone" id="booklet-dropzone">
-          <input type="file" id="booklet-file-input" accept="application/pdf" hidden />
-          <p class="dropzone-text icon-link"><Icon name="printer" />Clique aqui ou arraste seu PDF para gerar o Livreto A5</p>
-          <p class="dropzone-sub">Processamento 100% no seu navegador com imposição vetorial exata</p>
-        </div>
-
-        <div class="booklet-status" id="booklet-status" hidden></div>
-
-        <div class="booklet-alt-print">
-          <span>Sua impressora já possui duplex com modo livreto automático?</span>
-          <button type="button" class="builder-btn" id="btn-print-a5">Imprimir em Modo A5 Direto</button>
-        </div>
-      </div>
+    <div class="booklet-alt-print">
+      <span>Sua impressora já possui duplex com modo livreto automático?</span>
+      <button type="button" class="builder-btn" id="btn-print-a5">Imprimir em Modo A5 Direto</button>
     </div>
   </section>
 
