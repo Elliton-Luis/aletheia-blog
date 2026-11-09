@@ -1,11 +1,19 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
 import { classify, formatDate } from '../utils/articles';
 
 const allArticles = await getCollection('articles');
-// Ordena cronologicamente (Capítulo I ao X)
-const articles = allArticles.sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
+
+// Ordena cronologicamente para a encadernação do livro
+const chronologicalArticles = [...allArticles].sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
+
+// Os 20 ensaios mais recentes para a caixinha de seleção rápida
+const recentArticles = [...allArticles].sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 20);
+
+// Identificadores dos 10 mais recentes (selecionados por padrão)
+const defaultSelectedSlugs = new Set(recentArticles.slice(0, 10).map((a) => a.id));
 
 function toRoman(num: number): string {
   const map: [number, string][] = [
@@ -22,11 +30,11 @@ function toRoman(num: number): string {
       num -= val;
     }
   }
-  return res;
+  return res || 'I';
 }
 
 const renderedChapters = await Promise.all(
-  articles.map(async (article, idx) => {
+  chronologicalArticles.map(async (article, idx) => {
     const { Content } = await render(article);
     const meta = classify(article);
     return {
@@ -38,28 +46,155 @@ const renderedChapters = await Promise.all(
     };
   })
 );
+
+const recentMetaList = recentArticles.map((article) => {
+  const meta = classify(article);
+  const searchTerms = [article.data.title, article.data.description, ...article.data.tags].join(' ');
+  return {
+    article,
+    meta,
+    searchTerms,
+    isDefaultSelected: defaultSelectedSlugs.has(article.id),
+  };
+});
 ---
 
 <BaseLayout
-  title="Antologia · Volume I"
-  description="Edição encadernada reunindo todos os dez ensaios do caderno Aletheia para leitura contínua ou impressão em PDF."
+  title="Antologia · Caderno de Ensaios"
+  description="Edição encadernada do caderno Aletheia: monte seu volume com até 10 ensaios e baixe em PDF ou Livreto A5 para dobrar e encadernar."
   wide
   showPrint
 >
   <header class="page-heading antologia-page-heading">
     <p class="eyebrow">Edição Encadernada</p>
-    <h1>Antologia · Volume I</h1>
-    <p>Todos os dez ensaios reunidos em volume único. Use o botão «Imprimir» no topo para salvar em PDF.</p>
+    <h1>Antologia</h1>
+    <p>Reúna até 10 ensaios em um volume único. Leia na tela, baixe em PDF ou produza seu Livreto A5 encadernado por dobra e grampo.</p>
   </header>
+
+  <!-- =====================================================================
+       PAINEL MONTE SEU LIVRINHO
+       ===================================================================== -->
+  <section class="book-builder" id="book-builder" aria-label="Personalização da Antologia">
+    <div class="book-builder-header">
+      <div class="builder-title-group">
+        <p class="eyebrow icon-link"><Icon name="book" />Personalize sua Edição</p>
+        <h2>Monte seu Livrinho</h2>
+        <p class="builder-description">
+          Escolha até 10 ensaios para encadernar neste volume.
+        </p>
+      </div>
+      <div class="builder-counter-badge" id="builder-counter">
+        <span class="counter-number" id="selected-count">{defaultSelectedSlugs.size}</span> / 10 selecionados
+      </div>
+    </div>
+
+    <!-- Barra de busca e ações -->
+    <div class="builder-toolbar">
+      <div class="builder-search">
+        <Icon name="search" />
+        <label for="builder-search-input" class="sr-only">Buscar nos ensaios recentes</label>
+        <input type="search" id="builder-search-input" placeholder="Buscar ensaio por título ou tema..." autocomplete="off" />
+      </div>
+      <div class="builder-actions">
+        <button type="button" class="builder-btn" id="btn-select-recent-10">10 Mais Recentes</button>
+        <button type="button" class="builder-btn" id="btn-clear-selection">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Caixinha com os 20 ensaios mais recentes -->
+    <div class="recent-essays-box">
+      <div class="box-header">
+        <span class="box-title">Ensaios Recentes (selecione até 10):</span>
+        <span class="box-warning" id="selection-warning" hidden>⚠️ Limite de 10 ensaios atingido para encadernação.</span>
+      </div>
+      <ul class="recent-essays-list" id="recent-essays-list">
+        {recentMetaList.map(({ article, meta, searchTerms, isDefaultSelected }) => (
+          <li class:list={['recent-essay-item', isDefaultSelected && 'selected']} data-slug={article.id} data-search={searchTerms}>
+            <label class="essay-checkbox-label">
+              <input
+                type="checkbox"
+                class="essay-checkbox"
+                data-slug={article.id}
+                checked={isDefaultSelected}
+              />
+              <span class="essay-item-title">{article.data.title}</span>
+              <span class="essay-item-meta">{formatDate(article.data.date)} · {meta.gravitas.label} · {meta.minutes} min</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <!-- Botões de Exportação / Download -->
+    <div class="export-options">
+      <span class="export-title">Opções de Download e Impressão</span>
+      <div class="export-buttons">
+        <button type="button" class="export-btn export-pdf" id="btn-export-pdf">
+          <Icon name="printer" />
+          <span>Baixar PDF (A4 Sequencial)</span>
+        </button>
+
+        <button type="button" class="export-btn export-booklet" id="btn-export-booklet">
+          <Icon name="book" />
+          <span>Livreto A5 (Dobra & Grampo)</span>
+        </button>
+      </div>
+      <p class="export-hint">
+        <strong>PDF (A4 Sequencial):</strong> Leitura fluida página por página, ideal para telas, tablets ou impressão tradicional.<br/>
+        <strong>Livreto A5 (Dobra & Grampo):</strong> Diagramação com imposição de páginas para dobrar ao meio e montar seu livro de bolso.
+      </p>
+
+      <!-- Painel Desdobrável do Livreto A5 -->
+      <div class="booklet-panel" id="booklet-panel" hidden>
+        <h3 class="booklet-panel-title icon-link"><Icon name="book" />Como funciona a imposição do Livreto A5</h3>
+        <p class="booklet-explanation">
+          Em uma folha A4 em paisagem cabem duas páginas A5 lado a lado. Ao dobrar ao meio, as páginas precisam estar ordenadas de forma especial:
+        </p>
+        <div class="booklet-diagram">
+          <strong>Ordem das Páginas nas Folhas A4:</strong>
+          <ol>
+            <li><strong>Folha 1 (Frente):</strong> Contracapa (última página) na esquerda · Capa frontal na direita</li>
+            <li><strong>Folha 1 (Verso):</strong> Página 2 (Prefácio) na esquerda · Penúltima página na direita</li>
+            <li><strong>Folha 2 (Frente):</strong> Antepenúltima página na esquerda · Página 3 na direita</li>
+            <li>... e assim por diante até se encontrarem no centro da dobra!</li>
+          </ol>
+        </div>
+
+        <p class="booklet-explanation">
+          <strong>Conversor Automático:</strong> Baixe primeiro o seu arquivo via <em>«Baixar PDF (A4 Sequencial)»</em> e depois arraste-o ou selecione-o na caixa abaixo. Nosso algoritmo organizará as páginas na ordem exata de imposição e baixará o seu <strong>Livreto A5 pronto para impressão frente e verso</strong>:
+        </p>
+
+        <div class="booklet-dropzone" id="booklet-dropzone">
+          <input type="file" id="booklet-file-input" accept="application/pdf" hidden />
+          <p class="dropzone-text icon-link"><Icon name="printer" />Clique aqui ou arraste seu PDF para gerar o Livreto A5</p>
+          <p class="dropzone-sub">Processamento 100% no seu navegador com imposição vetorial exata</p>
+        </div>
+
+        <div class="booklet-status" id="booklet-status" hidden></div>
+
+        <div class="booklet-alt-print">
+          <span>Sua impressora já possui duplex com modo livreto automático?</span>
+          <button type="button" class="builder-btn" id="btn-print-a5">Imprimir em Modo A5 Direto</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       LIVRO / ANTOLOGIA (ÁREA IMPRESSA & VISUALIZAÇÃO)
+       ===================================================================== -->
+  <p class="empty-book-note" id="empty-book-note" hidden>
+    Nenhum ensaio selecionado. Marque ao menos um ensaio na caixinha acima para compor sua antologia.
+  </p>
 
   <div class="antologia-book">
     <!-- CAPA (Página 1 na impressão) -->
     <section class="book-cover">
       <p class="eyebrow">Caderno de Ensaios</p>
       <h2 class="book-title">Aletheia</h2>
-      <p class="book-subtitle">Uma Investigação Filosófica sobre Conhecimento, Sociedade e Razão</p>
+      <p class="book-subtitle" id="book-cover-subtitle">Uma Investigação Filosófica sobre Conhecimento, Sociedade e Razão</p>
       <div class="book-cover-meta">
-        <p>Volume I · Compilação Completa dos Dez Ensaios</p>
+        <p id="book-cover-count">Antologia · {defaultSelectedSlugs.size} Ensaios Selecionados</p>
         <p>Por <strong>O Eleito</strong></p>
         <p>2026</p>
       </div>
@@ -90,10 +225,10 @@ const renderedChapters = await Promise.all(
     <!-- SUMÁRIO GERAL (Página 3 na impressão) -->
     <section class="book-toc">
       <p class="eyebrow">Sumário Geral</p>
-      <ol class="book-toc-list">
-        {renderedChapters.map(({ article, meta, chapterNum, roman }) => (
+      <ol class="book-toc-list" id="book-toc-list">
+        {renderedChapters.map(({ article, meta, roman }) => (
           <li>
-            <a href={`#capitulo-${chapterNum}`}>
+            <a href={`#capitulo-${article.id}`}>
               <span class="toc-roman">Capítulo {roman}</span>
               <span class="toc-title">{article.data.title}</span>
               <span class="toc-dots" aria-hidden="true"></span>
@@ -104,13 +239,19 @@ const renderedChapters = await Promise.all(
       </ol>
     </section>
 
-    <!-- OS DEZ CAPÍTULOS -->
+    <!-- OS CAPÍTULOS -->
     <div class="book-chapters">
-      {renderedChapters.map(({ article, Content, meta, chapterNum, roman }) => (
-        <article class="book-chapter" id={`capitulo-${chapterNum}`}>
+      {renderedChapters.map(({ article, Content, meta, roman }) => (
+        <article
+          class="book-chapter"
+          id={`capitulo-${article.id}`}
+          data-slug={article.id}
+          data-title={article.data.title}
+          data-meta={`${meta.gravitas.label} · ${meta.minutes} min`}
+        >
           <header class="chapter-header">
             <p class="post-class">
-              Capítulo {roman} · <strong>{meta.name}</strong> · {meta.formatted} caracteres · {meta.gravitas.label} · {meta.minutes} min
+              <span class="chapter-roman-num">Capítulo {roman}</span> · <strong>{meta.name}</strong> · {meta.formatted} caracteres · {meta.gravitas.label} · {meta.minutes} min
             </p>
             <h2 class="chapter-title">{article.data.title}</h2>
             <p class="post-deck">{article.data.description}</p>
@@ -155,11 +296,15 @@ const renderedChapters = await Promise.all(
     <!-- COLOFÃO FINAL -->
     <footer class="book-colophon">
       <p class="eyebrow">Colofão</p>
-      <p>
-        Este volume reúne os dez ensaios seminais publicados no caderno digital <strong>Aletheia</strong>.
+      <p id="book-colophon-text">
+        Este volume reúne <span id="colophon-count">{defaultSelectedSlugs.size} ensaios seminais</span> publicados no caderno digital <strong>Aletheia</strong>.
         Tipografia composta em <em>Literata</em>.
       </p>
       <p class="colophon-credit">© O Eleito</p>
     </footer>
   </div>
+
+  <script>
+    import '../scripts/antologia.ts';
+  </script>
 </BaseLayout>

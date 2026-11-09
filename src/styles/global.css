@@ -538,6 +538,318 @@ h1 em { color: var(--muted); font-weight: 400; }
   font-variant: small-caps;
 }
 
+/* =====================================================================
+   Monte seu Livrinho (Personalização da Antologia)
+   ===================================================================== */
+.book-builder {
+  margin: 2rem 0 3.5rem;
+  padding: 1.6rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--paper-raised);
+}
+.book-builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+.builder-title-group h2 {
+  margin: .25rem 0 .4rem;
+  font-family: var(--serif);
+  font-size: 1.55rem;
+}
+.builder-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: .88rem;
+}
+.builder-counter-badge {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: .84rem;
+  color: var(--accent);
+  padding: .35rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  white-space: nowrap;
+}
+.counter-number {
+  font-weight: 700;
+  color: var(--ink);
+}
+.builder-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8rem;
+  margin-bottom: 1rem;
+}
+.builder-search {
+  flex: 1 1 18rem;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .35rem .8rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--muted);
+}
+.builder-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: .88rem;
+}
+.builder-search input:focus-visible {
+  outline: 0;
+}
+.builder-actions {
+  display: flex;
+  gap: .4rem;
+}
+.builder-btn {
+  min-height: 2.2rem;
+  padding: .3rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--muted);
+  background: var(--paper);
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: color .18s ease, border-color .18s ease;
+}
+.builder-btn:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+.recent-essays-box {
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--paper);
+  padding: .35rem .45rem;
+}
+.box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .4rem .6rem .55rem;
+  border-bottom: 1px solid var(--line);
+  font-size: .82rem;
+  color: var(--muted);
+}
+.box-title {
+  font-weight: 500;
+}
+.box-warning {
+  color: #a43232;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.recent-essays-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.recent-essay-item {
+  border-bottom: 1px solid var(--line);
+  transition: background-color .15s ease;
+}
+.recent-essay-item:last-child {
+  border-bottom: 0;
+}
+.recent-essay-item.selected {
+  background: rgba(75, 64, 52, 0.05);
+}
+.essay-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: .6rem .65rem;
+  cursor: pointer;
+  width: 100%;
+}
+.essay-checkbox {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.essay-item-title {
+  flex: 1;
+  font-family: var(--serif);
+  font-size: .92rem;
+  color: var(--ink);
+}
+.essay-item-meta {
+  color: var(--muted);
+  font-size: .78rem;
+  white-space: nowrap;
+}
+.export-options {
+  margin-top: 1.5rem;
+  padding-top: 1.3rem;
+  border-top: 1px solid var(--line);
+}
+.export-title {
+  display: block;
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--accent);
+  margin-bottom: .65rem;
+}
+.export-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  min-height: 2.6rem;
+  padding: .45rem 1.15rem;
+  border-radius: 2px;
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.export-pdf {
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid var(--accent);
+}
+.export-pdf:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.export-booklet {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+}
+.export-booklet:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.export-hint {
+  margin: .8rem 0 0;
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.5;
+}
+
+/* Painel de Instruções & Conversor do Livreto A5 */
+.booklet-panel {
+  margin-top: 1.4rem;
+  padding: 1.3rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 3px;
+  background: var(--paper);
+}
+.booklet-panel-title {
+  margin: 0 0 .5rem;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+.booklet-explanation {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.55;
+}
+.booklet-diagram {
+  margin: 0 0 1.2rem;
+  padding: .85rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--paper-raised);
+  font-size: .82rem;
+  color: var(--accent);
+}
+.booklet-diagram ol {
+  margin: .35rem 0 0;
+  padding-left: 1.2rem;
+}
+.booklet-diagram li + li {
+  margin-top: .25rem;
+}
+.booklet-dropzone {
+  border: 2px dashed var(--line);
+  border-radius: 3px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  background: var(--paper-raised);
+  cursor: pointer;
+  transition: border-color .18s ease, background-color .18s ease;
+}
+.booklet-dropzone:hover, .booklet-dropzone.drag-active {
+  border-color: var(--accent);
+  background: rgba(75, 64, 52, 0.06);
+}
+.dropzone-text {
+  margin: 0 0 .3rem;
+  font-weight: 500;
+  font-size: .92rem;
+  color: var(--ink);
+  justify-content: center;
+}
+.dropzone-sub {
+  margin: 0;
+  font-size: .78rem;
+  color: var(--muted);
+}
+.booklet-alt-print {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: .82rem;
+  color: var(--muted);
+}
+.booklet-status {
+  margin-top: .9rem;
+  padding: .75rem 1rem;
+  border-radius: 2px;
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.booklet-status.processing {
+  background: rgba(75, 64, 52, 0.08);
+  color: var(--accent);
+}
+.booklet-status.success {
+  background: #edf7ee;
+  color: #245b27;
+  border: 1px solid #c8e6c9;
+}
+.booklet-status.error {
+  background: #fdeeee;
+  color: #8c1e1e;
+  border: 1px solid #f8caca;
+}
+.empty-book-note {
+  padding: 2.5rem 0;
+  text-align: center;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  border: 1px dashed var(--line);
+  border-radius: 3px;
+  margin: 2rem 0;
+}
+
 @media print {
   :root, :root[data-theme="dark"], :root[data-theme="light"] {
     color-scheme: light;
@@ -594,7 +906,7 @@ h1 em { color: var(--muted); font-weight: 400; }
   .post-contact { color: #333; }
 
   /* Antologia & Elementos Especiais na Impressão */
-  .antologia-page-heading, .skip-to-summary { display: none !important; }
+  .antologia-page-heading, .skip-to-summary, .book-builder, .booklet-panel, .empty-book-note { display: none !important; }
   .antologia-book { max-width: none !important; margin: 0 !important; }
   .book-cover {
     min-height: 80vh;
