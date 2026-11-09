@@ -24,8 +24,8 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
     <header class="post-header">
       <a class="back-link icon-link" href="/ensaios/"><Icon name="arrow-left" />Todos os ensaios</a>
       <p class="eyebrow">{article.data.tags.join(' · ') || 'Caderno pessoal'}</p>
-      <p class="post-class" title={`${category.title} · Gravitas: ${category.gravitas.hint}`}>
-        <strong>{category.name}</strong> · {category.formatted} caracteres · Gravitas: {category.gravitas.label} · {category.minutes} min de leitura
+      <p class="post-class" title={`${category.title} · Complexidade: ${category.gravitas.hint}`}>
+        <strong>{category.name}</strong> · {category.formatted} caracteres · Complexidade: {category.gravitas.label} · {category.minutes} min
       </p>
       <h1>{article.data.title}</h1>
       <p class="post-deck">{article.data.description}</p>

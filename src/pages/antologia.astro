@@ -146,7 +146,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
                   <span class="toc-roman">Capítulo {roman}</span>
                   <span class="toc-title">{article.data.title}</span>
                   <span class="toc-dots" aria-hidden="true"></span>
-                  <span class="toc-badge">Gravitas: {meta.gravitas.label} · {meta.minutes} min</span>
+                  <span class="toc-badge">Complexidade: {meta.gravitas.label} · {meta.minutes} min</span>
                 </a>
               </li>
             ))}
@@ -167,11 +167,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
                   <span class="metric-item">{formatDate(article.data.date)}</span>
                   <span class="metric-sep">·</span>
                   <span class="metric-item" title={meta.gravitas.hint}>
-                    Gravitas: {meta.gravitas.label}
+                    Complexidade: {meta.gravitas.label}
                   </span>
                   <span class="metric-sep">·</span>
                   <span class="metric-item">
-                    {meta.minutes} min de leitura
+                    {meta.minutes} min
                   </span>
                 </div>
               </header>
