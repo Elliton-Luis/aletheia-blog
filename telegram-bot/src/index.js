@@ -1785,8 +1785,8 @@ async function handleCardRequest(url, env) {
 
   return new Response(html, {
     headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=3600",
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-cache, no-store, must-revalidate",
     },
   });
 }
