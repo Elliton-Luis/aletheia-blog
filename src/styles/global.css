@@ -246,11 +246,17 @@ h1 em { color: var(--muted); font-weight: 400; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
 
-.print-credit { display: none; }
-
 @page {
   size: A4;
-  margin: 18mm 20mm 20mm;
+  margin: 18mm 20mm 24mm 20mm;
+  @bottom-right {
+    content: "O Eleito";
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 8.5pt;
+    font-variant: small-caps;
+    letter-spacing: .08em;
+    color: #777;
+  }
 }
 
 @media print {
@@ -307,17 +313,4 @@ h1 em { color: var(--muted); font-weight: 400; }
   .site-footer { display: none !important; }
   .home-note, .article-row, .post-footer, .about-contact { border-color: #aaa69c !important; }
   .post-contact { color: #333; }
-  .print-credit {
-    display: block;
-    position: fixed;
-    right: 0;
-    bottom: 6mm;
-    left: 0;
-    color: #888;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 8pt;
-    font-variant: small-caps;
-    letter-spacing: .06em;
-    text-align: center;
-  }
 }
