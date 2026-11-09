@@ -24,15 +24,74 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
     <header class="post-header">
       <a class="back-link icon-link" href="/ensaios/"><Icon name="arrow-left" />Todos os ensaios</a>
       <p class="eyebrow">{article.data.tags.join(' · ') || 'Caderno pessoal'}</p>
-      <p class="post-class" title={category.title}><strong>{category.name}</strong> · {category.formatted} caracteres · {category.minutes} min de leitura</p>
+      <div class="post-meta-badges">
+        <span class="post-class" title={category.title}>
+          <strong>{category.name}</strong> · {category.formatted} caracteres
+        </span>
+        <span class="gravitas-pill" title={category.gravitas.hint}>
+          <span class="meta-icon" aria-hidden="true">{category.gravitas.icon}</span>
+          <span>Gravitas: <strong>{category.gravitas.label}</strong></span>
+        </span>
+        <span class="analog-pill" title={`Ritmo analógico: ${category.analogTime.description}`}>
+          <span class="meta-icon" aria-hidden="true">{category.analogTime.icon}</span>
+          <span>{category.analogTime.name} · ~{category.analogTime.weightedMinutes} min</span>
+        </span>
+      </div>
       <h1>{article.data.title}</h1>
       <p class="post-deck">{article.data.description}</p>
+      {(category.aphorismus || category.resumo) && (
+        <p class="skip-to-summary">
+          Não tem tempo para ler tudo agora?{' '}
+          <a href="#aphorismus" class="skip-summary-link">Ir direto para a síntese ↓</a>
+        </p>
+      )}
       <time datetime={article.data.date.toISOString()}>{formatDate(article.data.date)}</time>
       <p class="post-author">Por <strong>O Eleito</strong></p>
     </header>
     <div class="post-reading-layout">
       <div class="post-body">
         <div class="prose"><Content /></div>
+
+        {category.scholia.length > 0 && (
+          <section class="scholia-box" id="scholia" aria-labelledby="scholia-title">
+            <div class="scholia-header">
+              <span class="scholia-badge">Marginalia & Raízes</span>
+              <h2 id="scholia-title">Scholia · Glossário Etimológico</h2>
+            </div>
+            <dl class="scholia-list">
+              {category.scholia.map((item) => (
+                <div class="scholia-item">
+                  <dt>
+                    <strong class="scholia-term">{item.term}</strong>
+                    <span class="scholia-etymology">{item.etymology}</span>
+                  </dt>
+                  <dd class="scholia-meaning">{item.meaning}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+
+        {(category.aphorismus || category.resumo) && (
+          <section class="aphorismus-box" id="aphorismus" aria-labelledby="aphorismus-title">
+            <div class="aphorismus-header">
+              <span class="aphorismus-badge">Destilação & Síntese</span>
+              <h2 id="aphorismus-title">Aphorismus</h2>
+            </div>
+            {category.aphorismus && (
+              <blockquote class="aphorismus-quote">
+                <p>«{category.aphorismus}»</p>
+              </blockquote>
+            )}
+            {category.resumo && (
+              <div class="aphorismus-summary">
+                <h3 class="summary-title">Síntese Fiel do Ensaio</h3>
+                <p>{category.resumo}</p>
+              </div>
+            )}
+          </section>
+        )}
+
         {article.data.tags.length > 0 && (
           <footer class="post-footer">
             <span>Assuntos</span>
@@ -58,6 +117,16 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
                   <a href={`#${heading.slug}`} data-heading-id={heading.slug}>{heading.text}</a>
                 </li>
               ))}
+              {category.scholia.length > 0 && (
+                <li class="toc-depth-2 toc-scholion">
+                  <a href="#scholia">Scholia (Etimologia)</a>
+                </li>
+              )}
+              {(category.aphorismus || category.resumo) && (
+                <li class="toc-depth-2 toc-aphorism">
+                  <a href="#aphorismus">Aphorismus & Síntese</a>
+                </li>
+              )}
             </ol>
           </nav>
         </aside>

@@ -16,6 +16,18 @@ const articles = defineCollection({
     description: z.string(),
     tags: z.array(z.string()).default([]),
     pinned: z.boolean().default(false),
+    gravitas: z.enum(['levis', 'modicus', 'gravis']).optional(),
+    aphorismus: z.string().optional(),
+    resumo: z.string().optional(),
+    scholia: z
+      .array(
+        z.object({
+          term: z.string(),
+          etymology: z.string(),
+          meaning: z.string(),
+        })
+      )
+      .optional(),
   }),
 });
 

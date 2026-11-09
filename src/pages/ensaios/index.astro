@@ -14,13 +14,13 @@ const pinned = pinnedArticles(articles);
     <p class="eyebrow">Arquivo</p>
     <h1>Ensaios</h1>
     <p>Ideias, leituras e descobertas reunidas ao longo do tempo.</p>
+    <div class="archive-anthology-callout">
+      <a class="icon-link" href="/antologia/">
+        <Icon name="book" />
+        <span><strong>Antologia em Volume Único:</strong> Ler todos os ensaios encadernados ou salvar em PDF &rarr;</span>
+      </a>
+    </div>
   </header>
-  {pinned.length > 0 && (
-    <section class="pinned-block" aria-labelledby="fixados">
-      <p class="eyebrow icon-link" id="fixados"><Icon name="pin" />Fixados</p>
-      <ArticleList articles={pinned} showMonthHeadings={false} />
-    </section>
-  )}
   <div class="search-filter" id="search-filter" hidden>
     <label for="search-text" class="sr-only">Buscar por título, descrição ou assunto</label>
     <Icon name="search" />
@@ -42,6 +42,12 @@ const pinned = pinnedArticles(articles);
     </form>
     <p class="archive-count" id="archive-count" aria-live="polite" hidden></p>
   </section>
+  {pinned.length > 0 && (
+    <section class="pinned-block" aria-labelledby="fixados">
+      <p class="eyebrow icon-link" id="fixados"><Icon name="pin" />Fixados</p>
+      <ArticleList articles={pinned} showMonthHeadings={false} />
+    </section>
+  )}
   <div class="virtual-archive" id="virtual-archive">
     <div class="virtual-spacer" id="top-spacer" aria-hidden="true" hidden></div>
     <div class="virtual-sentinel" id="top-sentinel" aria-hidden="true"></div>
