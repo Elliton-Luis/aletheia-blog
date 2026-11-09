@@ -695,13 +695,76 @@ async function sendForEditing(env, chatId, path) {
   );
 }
 
+function extrairCorpo(raw) {
+  const { data: fm, body } = parseFrontmatter(raw);
+  return (fm ? body : raw).trim();
+}
+
+function montarTextoEditado(original, novoConteudo, modo) {
+  const { data: fmOriginal, body: bodyOriginal } = parseFrontmatter(original);
+  const { data: fmNovo } = parseFrontmatter(novoConteudo);
+
+  if (modo === "reescrever") {
+    if (fmNovo) return novoConteudo;
+    const header = {
+      title: extractField(fmOriginal, "title"),
+      date: extractField(fmOriginal, "date"),
+      description: extractField(fmOriginal, "description"),
+      tags: extractTags(fmOriginal),
+      pinned: extractPinned(fmOriginal),
+    };
+    return buildMarkdown(header, novoConteudo.trim());
+  }
+
+  const corpoAdicionar = extrairCorpo(novoConteudo);
+  if (!fmOriginal) {
+    return `${original.trim()}\n\n${corpoAdicionar}\n`;
+  }
+  const header = {
+    title: extractField(fmOriginal, "title"),
+    date: extractField(fmOriginal, "date"),
+    description: extractField(fmOriginal, "description"),
+    tags: extractTags(fmOriginal),
+    pinned: extractPinned(fmOriginal),
+  };
+  const corpoAtualizado = `${bodyOriginal.trim()}\n\n${corpoAdicionar}`;
+  return buildMarkdown(header, corpoAtualizado);
+}
+
 async function handleEditando(env, chatId, session, msg, text) {
-  if (text === "/reescrever" || text === "/colar") {
-    if (!session.pendente) {
-      return send(env, chatId, "Mande o conteúdo editado antes (texto ou arquivo), depois use /reescrever ou /colar.");
+  // 1. Suporte a comando direto: "/colar <texto opcional>" ou "/colar" puro
+  const ehColarComando = text === "/colar" || text?.startsWith("/colar ");
+  const ehReescreverComando = text === "/reescrever" || text?.startsWith("/reescrever ");
+  const ehEnd = text === "/end";
+
+  if (ehColarComando || (ehEnd && session.pendente)) {
+    const textoParaColar = text?.startsWith("/colar ")
+      ? text.replace(/^\/colar\s+/, "").trim()
+      : session.pendente;
+
+    if (!textoParaColar?.trim()) {
+      return send(env, chatId, "Mande o conteúdo que deseja acrescentar (texto, áudio ou arquivo), ou envie `/colar seu texto aqui`.");
     }
-    const novo = text === "/reescrever" ? session.pendente : `${session.original.trim()}\n\n${session.pendente.trim()}\n`;
-    return commitEdit(env, chatId, session, novo);
+
+    const novo = montarTextoEditado(session.original, textoParaColar, "colar");
+    return commitEdit(env, chatId, session, novo, "conteúdo adicionado ao fim");
+  }
+
+  if (ehReescreverComando) {
+    const textoParaReescrever = text?.startsWith("/reescrever ")
+      ? text.replace(/^\/reescrever\s+/, "").trim()
+      : session.pendente;
+
+    if (!textoParaReescrever?.trim()) {
+      return send(env, chatId, "Mande o novo conteúdo completo (texto ou arquivo), ou envie `/reescrever seu texto aqui`.");
+    }
+
+    const novo = montarTextoEditado(session.original, textoParaReescrever, "reescrever");
+    return commitEdit(env, chatId, session, novo, "conteúdo reescrito");
+  }
+
+  if (ehEnd && !session.pendente) {
+    return send(env, chatId, "Nenhum texto novo foi enviado para este ensaio. Mande o texto que quer acrescentar ou substituir, ou /cancelar.");
   }
 
   if (text === "/pin" || text?.startsWith("/tag")) {
@@ -721,7 +784,7 @@ async function handleEditando(env, chatId, session, msg, text) {
     }
   }
 
-  // Chegou um conteúdo novo (texto, áudio ou arquivo): guarda como pendente, aguardando /reescrever ou /colar.
+  // Chegou um conteúdo novo (texto, áudio ou arquivo): guarda como pendente e DÁ FEEDBACK IMEDIATO ao usuário!
   let conteudo = text;
   const audioId = getAudioFileId(msg);
   if (msg.document) {
@@ -731,13 +794,19 @@ async function handleEditando(env, chatId, session, msg, text) {
     try {
       conteudo = await transcreverAudio(env, audioId);
       if (!conteudo) return send(env, chatId, "⚠️ Não consegui identificar nenhuma fala no áudio.");
-      await send(env, chatId, `🎙️ Transcrito:\n\n"${conteudo}"\n\nAgora use /colar (adiciona ao fim) ou /reescrever (substitui tudo).`);
+      await saveSession(env, chatId, { ...session, pendente: conteudo });
+      return send(env, chatId, `🎙️ Transcrito (${conteudo.length} caracteres):\n\n"${conteudo}"\n\nAgora use /colar (adiciona ao fim) ou /reescrever (substitui tudo).`);
     } catch (e) {
       return send(env, chatId, `⚠️ Erro ao transcrever áudio: ${e.message}`);
     }
   }
-  if (!conteudo) return send(env, chatId, "Mande o texto editado, um áudio ou arquivo .md, e depois /reescrever ou /colar.");
+
+  if (!conteudo?.trim()) {
+    return send(env, chatId, "Mande o texto editado, um áudio ou arquivo .md, e depois use /colar ou /reescrever (ou /cancelar).");
+  }
+
   await saveSession(env, chatId, { ...session, pendente: conteudo });
+  return send(env, chatId, `📝 Conteúdo recebido (${conteudo.length} caracteres)!\n\nEnvie /colar para acrescentar no fim do ensaio, ou /reescrever para substituir tudo.\n(Ou /cancelar para desistir)`);
 }
 
 // /pin: alterna pinned. /tag nome-da-tag: adiciona a tag se não tiver, remove
