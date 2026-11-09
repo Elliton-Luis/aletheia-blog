@@ -57,67 +57,23 @@ export const GRAVITAS_CONFIG: Record<GravitasLevel, GravitasInfo> = {
     label: 'Levis',
     icon: '🪶',
     multiplier: 1.0,
-    hint: 'Levis (Leve): Texto fluido, narrativo, focado no cotidiano e frases curtas.',
+    hint: 'Levis (Leve): Texto fluido, focado no cotidiano e frases curtas.',
   },
   modicus: {
     level: 'modicus',
     label: 'Modicus',
     icon: '⚖️',
     multiplier: 1.2,
-    hint: 'Modicus (Moderado): Ensaio analítico, estrutura clara de tese/antítese, vocabulário culto.',
+    hint: 'Modicus (Moderado): Ensaio analítico, estrutura clara de tese/antítese.',
   },
   gravis: {
     level: 'gravis',
     label: 'Gravis',
     icon: '🧭',
     multiplier: 1.5,
-    hint: 'Gravis (Denso): Altamente filosófico ou técnico, conceitos abstratos, exige releitura.',
+    hint: 'Gravis (Denso): Altamente filosófico, conceitos abstratos, exige releitura.',
   },
 };
-
-export interface AnalogStage {
-  name: string;
-  icon: string;
-  description: string;
-  weightedMinutes: number;
-}
-
-export function computeAnalogTime(characters: number, gravitasLevel: GravitasLevel): AnalogStage {
-  const baseMinutes = characters / 1200;
-  const multiplier = GRAVITAS_CONFIG[gravitasLevel].multiplier;
-  const weightedMinutes = Math.max(1, Math.round(baseMinutes * multiplier));
-
-  if (weightedMinutes <= 3) {
-    return {
-      name: 'Centelha',
-      icon: '🪔',
-      description: '1 a 3 min (Foco rápido)',
-      weightedMinutes,
-    };
-  }
-  if (weightedMinutes <= 7) {
-    return {
-      name: 'Vela',
-      icon: '🕯️',
-      description: '4 a 7 min (Leitura atenta)',
-      weightedMinutes,
-    };
-  }
-  if (weightedMinutes <= 14) {
-    return {
-      name: 'Lampião',
-      icon: '🏮',
-      description: '8 a 14 min (Imersão reflexiva)',
-      weightedMinutes,
-    };
-  }
-  return {
-    name: 'Lareira',
-    icon: '🔥',
-    description: '15+ min (Estudo profundo)',
-    weightedMinutes,
-  };
-}
 
 export function plainText(markdown: string) {
   return markdown
@@ -139,13 +95,16 @@ export function readingTime(text: string) {
 export function classify(article: Article) {
   const text = plainText(article.body ?? '');
   const characters = text.length;
-  const minutes = Math.max(1, Math.ceil((characters / 1200) * 1.1));
-  const category = categories.find(({ max }) => characters <= max) ?? categories[categories.length - 1];
 
   const curated = CURATED_ARTICLE_META[article.id];
   const gravitasLevel: GravitasLevel = article.data.gravitas ?? curated?.gravitas ?? 'modicus';
   const gravitas = GRAVITAS_CONFIG[gravitasLevel];
-  const analogTime = computeAnalogTime(characters, gravitasLevel);
+
+  // Tempo de leitura ponderado pelo Gravitas (base 1200 car/min * multiplicador de densidade)
+  const baseMinutes = characters / 1200;
+  const minutes = Math.max(1, Math.round(baseMinutes * gravitas.multiplier));
+
+  const category = categories.find(({ max }) => characters <= max) ?? categories[categories.length - 1];
   const aphorismus = article.data.aphorismus ?? curated?.aphorismus ?? '';
   const resumo = article.data.resumo ?? curated?.resumo ?? '';
   const scholia: ScholiaItem[] = article.data.scholia ?? curated?.scholia ?? [];
@@ -157,7 +116,6 @@ export function classify(article: Article) {
     formatted: new Intl.NumberFormat('pt-BR').format(characters),
     title: `${category.label}: ${category.hint}`,
     gravitas,
-    analogTime,
     aphorismus,
     resumo,
     scholia,

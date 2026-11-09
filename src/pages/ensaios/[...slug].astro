@@ -24,19 +24,9 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
     <header class="post-header">
       <a class="back-link icon-link" href="/ensaios/"><Icon name="arrow-left" />Todos os ensaios</a>
       <p class="eyebrow">{article.data.tags.join(' · ') || 'Caderno pessoal'}</p>
-      <div class="post-meta-badges">
-        <span class="post-class" title={category.title}>
-          <strong>{category.name}</strong> · {category.formatted} caracteres
-        </span>
-        <span class="gravitas-pill" title={category.gravitas.hint}>
-          <span class="meta-icon" aria-hidden="true">{category.gravitas.icon}</span>
-          <span>Gravitas: <strong>{category.gravitas.label}</strong></span>
-        </span>
-        <span class="analog-pill" title={`Ritmo analógico: ${category.analogTime.description}`}>
-          <span class="meta-icon" aria-hidden="true">{category.analogTime.icon}</span>
-          <span>{category.analogTime.name} · ~{category.analogTime.weightedMinutes} min</span>
-        </span>
-      </div>
+      <p class="post-class" title={`${category.title} · Gravitas: ${category.gravitas.hint}`}>
+        <strong>{category.name}</strong> · {category.formatted} caracteres · Gravitas: {category.gravitas.label} · {category.minutes} min de leitura
+      </p>
       <h1>{article.data.title}</h1>
       <p class="post-deck">{article.data.description}</p>
       {(category.aphorismus || category.resumo) && (
