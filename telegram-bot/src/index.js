@@ -981,7 +981,13 @@ async function sendForReading(env, chatId, path) {
     return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
   }
   const link = env.SITE_URL ? `\n🔗 ${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slugFromPath(path)}/` : "";
-  await sendContent(env, chatId, `🔎 ${path}${link}`, file.text);
+  await send(env, chatId, `🔎 Leitura: ${fileName(path)}${link}`);
+
+  const blocks = splitTextIntoBlocks(file.text, LIMITE_TEXTO);
+  for (let i = 0; i < blocks.length; i++) {
+    const prefix = blocks.length > 1 ? `📄 [Parte ${i + 1}/${blocks.length}]\n\n` : "";
+    await send(env, chatId, `${prefix}${blocks[i]}`);
+  }
 }
 
 async function runArticleAnalysis(env, chatId, path) {
@@ -1132,12 +1138,20 @@ async function sendForEditing(env, chatId, path) {
   // O sha identifica a versão exata que você baixou (evita sobrescrever uma
   // edição feita pelo PC enquanto você editava pelo celular).
   await saveSession(env, chatId, { mode: "editando", path, sha: file.sha, original: file.text });
-  await sendContent(
+
+  // 1ª Mensagem: Explicação clara dos comandos disponíveis
+  await send(
     env,
     chatId,
-    `✏️ ${path}\n\nEdite e mande de volta (texto ou arquivo). Depois use /reescrever (substitui tudo) ou /colar (acrescenta no fim).\nOu, sem mexer no texto: /pin (liga/desliga fixado) ou /tag nome-da-tag (adiciona/remove).\n/cancelar para desistir.`,
-    file.text,
+    `✏️ Editando: ${fileName(path)}\n\n📌 Comandos disponíveis:\n• /reescrever — substitui todo o texto\n• /colar — acrescenta no fim\n• /pin — liga/desliga destaque fixado\n• /tag nome — adiciona ou remove tag\n• /cancelar — cancela e descarta alterações\n\nAbaixo envio o texto atual do ensaio:`
   );
+
+  // 2ª Mensagem (e seguintes): O texto em si, separado em blocos antes dos cabeçalhos ##
+  const blocks = splitTextIntoBlocks(file.text, LIMITE_TEXTO);
+  for (let i = 0; i < blocks.length; i++) {
+    const prefix = blocks.length > 1 ? `📄 [Parte ${i + 1}/${blocks.length}]\n\n` : "";
+    await send(env, chatId, `${prefix}${blocks[i]}`);
+  }
 }
 
 function extrairCorpo(raw) {
@@ -1331,17 +1345,79 @@ async function commitEdit(env, chatId, session, novo, resumo = "") {
   }
 }
 
-// Manda como mensagem de texto quando cabe; como arquivo .md quando é grande
-// demais para uma mensagem do Telegram (limite de ~4096 caracteres).
+// Divide o texto em blocos que respeitam cabeçalhos (##, ###) e o limite de caracteres
+function splitTextIntoBlocks(text, maxChars = LIMITE_TEXTO) {
+  if (!text || text.length <= maxChars) return [text || ""];
+  const sections = text.split(/(?=\n#{1,4}\s)/);
+  const blocks = [];
+  let currentBlock = "";
+
+  for (const sec of sections) {
+    if (!currentBlock) {
+      if (sec.length <= maxChars) {
+        currentBlock = sec;
+      } else {
+        const paras = sec.split(/\n\n+/);
+        for (const p of paras) {
+          if ((currentBlock ? `${currentBlock}\n\n${p}` : p).length <= maxChars) {
+            currentBlock = currentBlock ? `${currentBlock}\n\n${p}` : p;
+          } else {
+            if (currentBlock) blocks.push(currentBlock.trim());
+            if (p.length <= maxChars) {
+              currentBlock = p;
+            } else {
+              for (let i = 0; i < p.length; i += maxChars) {
+                blocks.push(p.slice(i, i + maxChars));
+              }
+              currentBlock = "";
+            }
+          }
+        }
+      }
+    } else if ((currentBlock + "\n\n" + sec).length <= maxChars) {
+      currentBlock += "\n\n" + sec;
+    } else {
+      blocks.push(currentBlock.trim());
+      if (sec.length <= maxChars) {
+        currentBlock = sec;
+      } else {
+        const paras = sec.split(/\n\n+/);
+        for (const p of paras) {
+          if ((currentBlock ? `${currentBlock}\n\n${p}` : p).length <= maxChars) {
+            currentBlock = currentBlock ? `${currentBlock}\n\n${p}` : p;
+          } else {
+            if (currentBlock) blocks.push(currentBlock.trim());
+            if (p.length <= maxChars) {
+              currentBlock = p;
+            } else {
+              for (let i = 0; i < p.length; i += maxChars) {
+                blocks.push(p.slice(i, i + maxChars));
+              }
+              currentBlock = "";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (currentBlock && currentBlock.trim()) {
+    blocks.push(currentBlock.trim());
+  }
+  return blocks;
+}
+
+// Manda o texto sempre em mensagens sequenciais (dividido em blocos se grande)
 async function sendContent(env, chatId, cabecalho, texto) {
   if (texto.length <= LIMITE_TEXTO) {
     return send(env, chatId, `${cabecalho}\n\n${texto}`);
   }
-  const form = new FormData();
-  form.append("chat_id", String(chatId));
-  form.append("caption", `${cabecalho}\n\n(Ensaio grande demais para mensagem de texto — mandei como arquivo.)`);
-  form.append("document", new File([texto], "ensaio.md", { type: "text/markdown" }));
-  await fetch(`https://api.telegram.org/bot${env.TELEGRAM_TOKEN}/sendDocument`, { method: "POST", body: form });
+  await send(env, chatId, cabecalho);
+  const blocks = splitTextIntoBlocks(texto, LIMITE_TEXTO);
+  for (let i = 0; i < blocks.length; i++) {
+    const prefix = blocks.length > 1 ? `📄 [Parte ${i + 1}/${blocks.length}]\n\n` : "";
+    await send(env, chatId, `${prefix}${blocks[i]}`);
+  }
 }
 
 async function sendDocumentContent(env, chatId, filename, texto, caption = "") {

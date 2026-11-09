@@ -4,6 +4,7 @@ interface ArchiveEntry {
   month: string;
   height: number;
   searchText: string;
+  complexity: string;
 }
 
 function normalize(value: string) {
@@ -43,10 +44,15 @@ if (
   const pageSize = 12;
   const maxPagesInDom = 3;
   const monthHeadingHeight = Math.ceil(articleList.querySelector<HTMLElement>('.month-heading')?.getBoundingClientRect().height ?? 0);
+  const complexityFilter = document.querySelector<HTMLElement>('#complexity-filter');
+  const complexityButtons = document.querySelectorAll<HTMLButtonElement>('.complexity-btn');
+  let selectedComplexity = 'todos';
+
   const entries: ArchiveEntry[] = Array.from(articleList.children).map((element) => {
     const row = element as HTMLLIElement;
     const date = row.querySelector<HTMLTimeElement>('.article-date')?.dateTime.slice(0, 10) ?? '';
     const heading = row.querySelector<HTMLElement>('.month-heading');
+    const complexity = row.dataset.complexity ?? '';
     const cleanRow = row.cloneNode(true) as HTMLLIElement;
     cleanRow.querySelector('.month-heading')?.remove();
 
@@ -62,6 +68,7 @@ if (
       month: date.slice(0, 7),
       height: Math.ceil(row.getBoundingClientRect().height - (heading?.getBoundingClientRect().height ?? 0)),
       searchText: normalize([title, description, ...tags].join(' ')),
+      complexity,
     };
   });
 
@@ -164,7 +171,8 @@ if (
     filtered = entries.filter((entry) =>
       (!from || entry.date >= from) &&
       (!to || entry.date <= to) &&
-      (!query || entry.searchText.includes(query)),
+      (!query || entry.searchText.includes(query)) &&
+      (selectedComplexity === 'todos' || entry.complexity === selectedComplexity),
     );
     renderWindow();
   }
@@ -194,6 +202,19 @@ if (
     applyFilters();
   });
   textInput.addEventListener('input', applyFilters);
+
+  complexityButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedComplexity = btn.dataset.complexity ?? 'todos';
+      complexityButtons.forEach((b) => {
+        const isActive = b === btn;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-pressed', String(isActive));
+      });
+      applyFilters();
+    });
+  });
+
   buttonPrevious.addEventListener('click', loadPrevious);
   buttonNext.addEventListener('click', loadNext);
   window.addEventListener('beforeprint', prepareForPrint);
@@ -210,6 +231,7 @@ if (
   }
 
   searchFilter.hidden = false;
+  if (complexityFilter) complexityFilter.hidden = false;
   filter.hidden = false;
   archiveCount.hidden = false;
   renderWindow();

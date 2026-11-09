@@ -120,6 +120,12 @@ h1 em { color: var(--muted); font-weight: 400; }
 .search-filter:focus-within { border-bottom-color: var(--accent); }
 .search-filter:focus-within .interface-icon { color: var(--accent); }
 .archive-controls { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; margin: 0 0 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--line); }
+.archive-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 1.2rem 2.2rem; }
+.complexity-filter { display: grid; gap: .55rem; }
+.complexity-options { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+.complexity-btn { min-height: 2.2rem; padding: .3rem .65rem; border: 1px solid var(--line); border-radius: 2px; color: var(--muted); background: transparent; font: inherit; font-size: .82rem; cursor: pointer; transition: color .18s ease, border-color .18s ease, background-color .18s ease; }
+.complexity-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+.complexity-btn.active { color: var(--accent); border-color: var(--accent); background: var(--paper-raised); font-weight: 500; }
 .date-filter { display: grid; gap: .55rem; }
 .filter-title { margin: 0; color: var(--accent); font-family: var(--serif); font-size: 1rem; }
 .date-fields { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem .8rem; }
@@ -241,6 +247,7 @@ h1 em { color: var(--muted); font-weight: 400; }
   .article-mon { font-size: .66rem; }
   .tag-list { margin-left: 4.4rem; }
   .archive-controls { align-items: start; flex-direction: column; gap: .65rem; padding: .9rem; }
+  .archive-filters { width: 100%; gap: 1rem; }
   .date-fields { align-items: start; }
   .date-fields label { flex: 1 1 8rem; }
   .date-fields input { width: 100%; }

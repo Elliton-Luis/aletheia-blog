@@ -27,19 +27,30 @@ const pinned = pinnedArticles(articles);
     <input id="search-text" type="search" placeholder="Buscar por título, descrição ou assunto" autocomplete="off" />
   </div>
   <section class="archive-controls" aria-label="Filtros do arquivo">
-    <form class="date-filter" id="date-filter" hidden>
-      <p class="filter-title icon-link"><Icon name="calendar" />Filtrar por período</p>
-      <div class="date-fields">
-        <label for="date-from">De
-          <input id="date-from" name="from" type="date" />
-        </label>
-        <label for="date-to">Até
-          <input id="date-to" name="to" type="date" />
-        </label>
-        <button class="clear-filter" type="submit">Aplicar</button>
-        <button class="clear-filter" id="clear-dates" type="button">Limpar datas</button>
+    <div class="archive-filters">
+      <div class="complexity-filter" id="complexity-filter" hidden>
+        <span class="filter-title icon-link"><Icon name="tag" />Complexidade</span>
+        <div class="complexity-options" role="radiogroup" aria-label="Filtrar por complexidade">
+          <button class="complexity-btn active" type="button" data-complexity="todos" aria-pressed="true">Todos</button>
+          <button class="complexity-btn" type="button" data-complexity="simples" aria-pressed="false">Simples</button>
+          <button class="complexity-btn" type="button" data-complexity="medio" aria-pressed="false">Médio</button>
+          <button class="complexity-btn" type="button" data-complexity="complexo" aria-pressed="false">Complexo</button>
+        </div>
       </div>
-    </form>
+      <form class="date-filter" id="date-filter" hidden>
+        <p class="filter-title icon-link"><Icon name="calendar" />Filtrar por período</p>
+        <div class="date-fields">
+          <label for="date-from">De
+            <input id="date-from" name="from" type="date" />
+          </label>
+          <label for="date-to">Até
+            <input id="date-to" name="to" type="date" />
+          </label>
+          <button class="clear-filter" type="submit">Aplicar</button>
+          <button class="clear-filter" id="clear-dates" type="button">Limpar datas</button>
+        </div>
+      </form>
+    </div>
     <p class="archive-count" id="archive-count" aria-live="polite" hidden></p>
   </section>
   {pinned.length > 0 && (

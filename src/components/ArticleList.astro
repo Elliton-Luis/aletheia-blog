@@ -29,7 +29,11 @@ const rows = articles.map((article, index) => {
 {articles.length ? (
   <ol class="article-list">
     {rows.map(({ article, category, monthKey, monthName, year, day, monthShort, startsMonth }) => (
-      <li class:list={['article-row', startsMonth && 'month-start']} data-month={monthKey}>
+      <li
+        class:list={['article-row', startsMonth && 'month-start']}
+        data-month={monthKey}
+        data-complexity={category.gravitas.level === 'levis' ? 'simples' : category.gravitas.level === 'modicus' ? 'medio' : 'complexo'}
+      >
         {showMonthHeadings && startsMonth && (
           <h2 class="month-heading" data-month={monthKey}>
             <span>{monthName}</span>
