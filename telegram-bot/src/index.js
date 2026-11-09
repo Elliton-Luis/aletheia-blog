@@ -1092,7 +1092,7 @@ async function runGenerateCard(env, chatId, path) {
 
   await send(env, chatId, `🎨 Gerando card editorial para "${title}"...`);
 
-  const frase = await extrairFraseMarcante(env, title, body || file.text);
+  const frase = CURATED_HOOKS[slug] || (await extrairFraseMarcante(env, title, body || file.text));
   const cardData = { title, quote: frase, link, slug };
 
   // Guarda dados no KV para a rota web do card
@@ -1604,47 +1604,56 @@ function escapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
+const CURATED_HOOKS = {
+  "filosofar-na-era-da-ia": "É importante pensar, mesmo estando errado.",
+  "sorte-sucesso-e-injustica": "Sabendo o que é melhor, ela escolheu a ignorância ou nunca teve a oportunidade de saber?",
+  "verdade-e-mentira-social": "Se você só sabe o quê das coisas e não sabe o porquê, você é um decorador.",
+  "filosofia-teologia-e-artes-liberais": "Quando a mente se fecha na pura mecânica, perde o sentido do sagrado.",
+  "suicidio": "E se o propósito da existência for ser?",
+  "o-valor-da-etimologia": "A etimologia é a arqueologia viva do pensamento humano.",
+  "sobre-o-sincretismo": "Misturar tradições sem compreender suas raízes não é síntese: é confusão.",
+  "a-cultura-do-vitimismo-e-a-mentira-necessidade": "A mentira repetida por necessidade de consolo aprisiona o espírito.",
+  "dificultar-para-aprender": "A facilidade excessiva é a anestesia do intelecto.",
+  "nunca-devemos-praticar-algo-que-e-possivelmente-mal": "A dúvida moral honesta nos obriga a recuar antes de agir.",
+};
+
 function buildCardSvg({ title, quote, link }) {
-  const lines = wrapSvgText(quote, 26);
-  const tspans = lines.map((l, i) => `<tspan x="100" dy="${i === 0 ? '0' : '1.5em'}">${escapeXml(l)}</tspan>`).join("\n      ");
-  const titleLines = wrapSvgText(title, 30);
-  const titleTspans = titleLines.map((l, i) => `<tspan x="100" dy="${i === 0 ? '0' : '1.35em'}">${escapeXml(l)}</tspan>`).join("\n      ");
+  const cleanQuote = quote.replace(/^[«"“\s]+|[»"”\s]+$/g, "").trim();
+  const quoteFormatted = `«${cleanQuote}»`;
+  const lines = wrapSvgText(quoteFormatted, 24);
+  const titleLines = wrapSvgText(title, 34);
   const cleanLink = link.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+  const lineHeight = 86;
+  const startY = Math.round(940 - ((lines.length - 1) * lineHeight) / 2);
+  const quoteSpans = lines
+    .map((l, i) => `<text x="140" y="${startY + i * lineHeight}" font-family="'Literata', Georgia, serif" font-size="58" font-style="italic" fill="#f4f2ea">${escapeXml(l)}</text>`)
+    .join("\n  ");
+
+  const titleSpans = titleLines
+    .map((l, i) => `<text x="140" y="${1700 + i * 44}" font-family="'Literata', Georgia, serif" font-size="30" font-weight="500" fill="#dedbd1">${escapeXml(l)}</text>`)
+    .join("\n  ");
+
+  const footerY = 1700 + titleLines.length * 44 + 24;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#141820" />
-      <stop offset="50%" stop-color="#0f1218" />
-      <stop offset="100%" stop-color="#080a0d" />
-    </linearGradient>
-  </defs>
-  <rect width="1080" height="1920" fill="url(#bg)" />
-  <rect x="44" y="44" width="992" height="1832" stroke="#e0a96d" stroke-opacity="0.25" stroke-width="1.5" />
-  
-  <!-- Header Topo -->
-  <text x="100" y="180" font-family="Georgia, serif" font-size="28" font-weight="bold" fill="#e0a96d" letter-spacing="6">ALETHEIA</text>
-  <line x1="300" y1="172" x2="380" y2="172" stroke="#e0a96d" stroke-opacity="0.4" stroke-width="1.5" />
-  <text x="980" y="180" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#94a3b8" letter-spacing="3">CADERNO DE ENSAIOS</text>
-  
-  <!-- Aspas e Citação Central -->
-  <text x="85" y="700" font-family="Georgia, serif" font-size="240" fill="#e0a96d" fill-opacity="0.2">“</text>
-  
-  <text x="100" y="780" font-family="Georgia, serif" font-size="52" font-style="italic" fill="#f8fafc">
-    ${tspans}
-  </text>
-  
-  <!-- Linha divisória e Rodapé -->
-  <line x1="100" y1="1620" x2="980" y2="1620" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1" />
-  
-  <text x="100" y="1670" font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="600" fill="#64748b" letter-spacing="2">ENSAIO FILOSÓFICO</text>
-  <text x="100" y="1720" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="bold" fill="#f1f5f9">
-    ${titleTspans}
-  </text>
-  
-  <text x="980" y="1770" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#64748b" letter-spacing="2">LEIA NO BLOG</text>
-  <text x="980" y="1810" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#e0a96d">${escapeXml(cleanLink)}</text>
+  <!-- Fundo Sólido Editorial Matte (Sem degradê) -->
+  <rect width="1080" height="1920" fill="#161816" />
+
+  <!-- Cabeçalho Topo -->
+  <text x="140" y="210" font-family="'Literata', Georgia, serif" font-size="24" letter-spacing="5" fill="#c2a47d">ALETHEIA</text>
+  <text x="940" y="210" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="2" fill="#7a7d74">CADERNO DE ENSAIOS</text>
+  <line x1="140" y1="240" x2="940" y2="240" stroke="#ffffff" stroke-opacity="0.09" stroke-width="1" />
+
+  <!-- Citação Central (Hero) -->
+  ${quoteSpans}
+
+  <!-- Rodapé Editorial -->
+  <line x1="140" y1="1640" x2="940" y2="1640" stroke="#ffffff" stroke-opacity="0.09" stroke-width="1" />
+  ${titleSpans}
+  <text x="140" y="${footerY}" font-family="system-ui, -apple-system, sans-serif" font-size="16" letter-spacing="1" fill="#8a8d83">POR O ELEITO</text>
+  <text x="940" y="${footerY}" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="16" letter-spacing="1" fill="#c2a47d">${escapeXml(cleanLink)}</text>
 </svg>`;
 }
 
@@ -1659,14 +1668,18 @@ async function handleCardRequest(url, env) {
       const matched = posts.find((p) => slugFromPath(p) === slug);
       if (!matched) return new Response("Ensaio não encontrado", { status: 404 });
       const file = await getFile(env, matched);
-      const { data: fm } = parseFrontmatter(file.text);
+      const { data: fm, body } = parseFrontmatter(file.text);
       const title = (fm && extractField(fm, "title")) || slug;
-      const quote = (fm && extractField(fm, "description")) || title;
+      const quote = CURATED_HOOKS[slug] || (await extrairFraseMarcante(env, title, body || file.text));
       card = { title, quote, link: `${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slug}/`, slug };
+      await env.KV.put(`card:${slug}`, JSON.stringify(card), { expirationTtl: 60 * 60 * 24 * 30 });
     } catch (e) {
       return new Response(`Erro ao carregar ensaio: ${e.message}`, { status: 500 });
     }
   }
+
+  const cleanQuote = (card.quote || "").replace(/^[«"“\s]+|[»"”\s]+$/g, "").trim();
+  const cleanLink = (card.link || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1676,135 +1689,102 @@ async function handleCardRequest(url, env) {
   <meta name="viewport" content="width=1080, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400;1,6..72,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400;1,7..72,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 1080px;
       height: 1920px;
-      background: radial-gradient(circle at 15% 20%, #161b24 0%, #0a0c10 100%);
-      color: #f1f5f9;
-      font-family: 'Newsreader', Georgia, serif;
-      position: relative;
+      background: #161816;
+      color: #f4f2ea;
+      font-family: 'Literata', Georgia, serif;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 120px 90px;
+      padding: 160px 130px 140px;
+      -webkit-font-smoothing: antialiased;
     }
-    body::before {
-      content: '';
-      position: absolute;
-      inset: 44px;
-      border: 1px solid rgba(224, 169, 109, 0.28);
-      pointer-events: none;
-    }
-    .header {
+    .top-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding-bottom: 28px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
     }
     .brand {
-      font-family: 'Cinzel', serif;
-      font-size: 26px;
-      letter-spacing: 0.28em;
+      font-size: 24px;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: #e0a96d;
-      display: flex;
-      align-items: center;
-      gap: 16px;
+      color: #c2a47d;
+      font-weight: 500;
     }
-    .brand::after {
-      content: '';
-      height: 1px;
-      width: 70px;
-      background: rgba(224, 169, 109, 0.5);
-    }
-    .meta-tag {
-      font-family: 'Inter', sans-serif;
-      font-size: 16px;
-      letter-spacing: 0.15em;
+    .sub-brand {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: #94a3b8;
+      color: #7a7d74;
+      font-weight: 500;
     }
-    .quote-wrap {
-      position: relative;
+    .quote-container {
       margin: auto 0;
-      padding-left: 20px;
-    }
-    .quote-mark {
-      font-family: 'Cinzel', serif;
-      font-size: 200px;
-      line-height: 0.4;
-      color: rgba(224, 169, 109, 0.35);
-      position: absolute;
-      top: -70px;
-      left: -20px;
+      padding: 40px 0;
     }
     .quote-text {
-      font-size: 52px;
+      font-size: 60px;
       line-height: 1.5;
-      font-weight: 400;
       font-style: italic;
-      color: #f8fafc;
-      text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
-      max-width: 900px;
-      position: relative;
-      z-index: 2;
+      font-weight: 400;
+      color: #f4f2ea;
+      letter-spacing: -0.01em;
     }
-    .footer {
+    .footer-bar {
+      padding-top: 32px;
+      border-top: 1px solid rgba(255, 255, 255, 0.09);
       display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      border-top: 1px solid rgba(255, 255, 255, 0.12);
-      padding-top: 36px;
+      flex-direction: column;
+      gap: 16px;
     }
-    .title-area {
-      font-family: 'Inter', sans-serif;
-    }
-    .label {
-      font-size: 15px;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: #64748b;
-      margin-bottom: 8px;
-    }
-    .title {
+    .essay-title {
       font-size: 32px;
-      font-weight: 700;
-      color: #f1f5f9;
-      line-height: 1.3;
-      max-width: 620px;
+      line-height: 1.35;
+      font-weight: 500;
+      color: #dedbd1;
     }
-    .link-area {
-      font-family: 'Inter', sans-serif;
-      text-align: right;
+    .footer-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      color: #8a8d83;
     }
-    .link {
-      font-size: 22px;
-      font-weight: 600;
-      color: #e0a96d;
-      text-decoration: none;
+    .author-name {
+      text-transform: uppercase;
+    }
+    .site-domain {
+      color: #c2a47d;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
-  <div class="header">
+  <div class="top-bar">
     <div class="brand">Aletheia</div>
-    <div class="meta-tag">Caderno de Ensaios</div>
+    <div class="sub-brand">Caderno de Ensaios</div>
   </div>
-  <div class="quote-wrap">
-    <div class="quote-mark">“</div>
-    <div class="quote-text">${escapeHtml(card.quote)}</div>
+
+  <div class="quote-container">
+    <p class="quote-text">«${escapeHtml(cleanQuote)}»</p>
   </div>
-  <div class="footer">
-    <div class="title-area">
-      <div class="label">Ensaio Filosófico</div>
-      <div class="title">${escapeHtml(card.title)}</div>
-    </div>
-    <div class="link-area">
-      <div class="label">Leia no Blog</div>
-      <a href="${escapeHtml(card.link)}" class="link">${escapeHtml(card.link.replace(/^https?:\/\//, "").replace(/\/$/, ""))}</a>
+
+  <div class="footer-bar">
+    <h2 class="essay-title">${escapeHtml(card.title)}</h2>
+    <div class="footer-meta">
+      <span class="author-name">Por O Eleito</span>
+      <span class="site-domain">${escapeHtml(cleanLink)}</span>
     </div>
   </div>
 </body>
