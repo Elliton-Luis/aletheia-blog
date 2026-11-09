@@ -73,6 +73,39 @@ export default {
 // Roteamento
 // =====================================================================
 
+function extractMessageText(msg) {
+  const text = msg.text || msg.caption;
+  const entities = msg.entities || msg.caption_entities;
+  if (!text || !entities || !entities.length) return text?.trim() || "";
+
+  // Comandos puros (ex: /start, /cancelar, /end) devem permanecer intactos
+  if (entities.length === 1 && entities[0].type === "bot_command" && entities[0].offset === 0) {
+    return text.trim();
+  }
+
+  // Ordena entidades do fim para o início para não desalinhar os offsets UTF-16
+  const sorted = [...entities].sort((a, b) => (b.offset - a.offset) || (b.length - a.length));
+  let res = text;
+  for (const ent of sorted) {
+    if (ent.type === "bot_command") continue;
+    const start = ent.offset;
+    const end = ent.offset + ent.length;
+    const chunk = res.slice(start, end);
+    let wrapped = chunk;
+    if (ent.type === "bold") wrapped = `**${chunk}**`;
+    else if (ent.type === "italic") wrapped = `*${chunk}*`;
+    else if (ent.type === "code") wrapped = `\`${chunk}\``;
+    else if (ent.type === "pre") wrapped = `\`\`\`\n${chunk}\n\`\`\``;
+    else if (ent.type === "strikethrough") wrapped = `~~${chunk}~~`;
+    else if (ent.type === "blockquote" || ent.type === "expandable_blockquote") {
+      const quoted = chunk.split("\n").map((l) => `> ${l}`).join("\n");
+      wrapped = `\n\n${quoted}\n\n`;
+    }
+    res = res.slice(0, start) + wrapped + res.slice(end);
+  }
+  return res.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 async function handleUpdate(update, env) {
   if (update.callback_query) return handleCallback(update.callback_query, env);
 
@@ -85,7 +118,7 @@ async function handleUpdate(update, env) {
   // Whitelist: ignora qualquer pessoa que não seja você
   if (String(msg.from?.id) !== String(env.ALLOWED_USER_ID)) return;
   const chatId = msg.chat.id;
-  const text = msg.text?.trim();
+  const text = extractMessageText(msg);
   const session = await env.KV.get(sessionKey(chatId), "json");
 
   // Comandos globais: sempre interrompem o que estiver em andamento

@@ -169,8 +169,17 @@ h1 em { color: var(--muted); font-weight: 400; }
 .prose ul, .prose ol { padding-left: 1.4em; }
 .prose li { padding-left: .25em; margin: .3em 0; }
 .prose em { font-style: italic; font-weight: 560; }
-.prose blockquote { margin: 2em 0; padding: .2em 0 .2em 1.2em; color: var(--muted); border-left: 2px solid var(--accent); font-style: italic; }
-.prose blockquote p:last-child { margin-bottom: 0; }
+.prose blockquote {
+  margin: 2.2rem 0;
+  padding: .75rem 1.35rem;
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+  color: var(--ink);
+  font-style: italic;
+}
+.prose blockquote p { margin: 0; }
+.prose blockquote p + p { margin-top: .75em; }
 .prose img { display: block; max-width: 100%; height: auto; margin: 2rem auto; }
 .prose pre { overflow-x: auto; margin: 1.8rem 0; padding: .8rem 1rem; background: var(--paper-raised); border: 0; border-left: 2px solid var(--line); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .82rem; line-height: 1.65; }
 .prose :not(pre) > code { padding: .08em .18em; background: var(--paper-raised); border: 0; border-bottom: 1px solid var(--line); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .83em; }
@@ -297,7 +306,7 @@ h1 em { color: var(--muted); font-weight: 400; }
   h1, h2, h3, h4 { break-after: avoid-page; page-break-after: avoid; }
   p, li { orphans: 3; widows: 3; }
   blockquote, pre, img, figure, .article-row { break-inside: avoid-page; page-break-inside: avoid; }
-  .prose blockquote { color: #333; border-width: 1px; border-color: #999 !important; }
+  .prose blockquote { color: #333; border-width: 0 0 0 2px; border-color: #666 !important; background: transparent !important; padding: .3rem .8rem; }
   .prose pre { overflow: visible; white-space: pre-wrap; overflow-wrap: anywhere; background: #f6f3ed; border-color: #bbb; font-size: 9pt; }
   .prose img { max-height: 22cm; object-fit: contain; }
   .prose th, .prose td { border-color: #aaa69c; }
