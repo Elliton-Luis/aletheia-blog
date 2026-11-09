@@ -47,6 +47,7 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
             <div class="scholia-header">
               <span class="scholia-badge">Marginalia & Raízes</span>
               <h2 id="scholia-title">Scholia · Glossário Etimológico</h2>
+              <span class="ai-notice">Gerado com auxílio de IA</span>
             </div>
             <dl class="scholia-list">
               {category.scholia.map((item) => (
@@ -75,7 +76,10 @@ const tableOfContents = headings.filter((heading) => heading.depth === 2 || head
             )}
             {category.resumo && (
               <div class="aphorismus-summary">
-                <h3 class="summary-title">Síntese Fiel do Ensaio</h3>
+                <div class="summary-header-row">
+                  <h3 class="summary-title">Síntese Fiel do Ensaio</h3>
+                  <span class="ai-notice">Resumo feito com auxílio de IA</span>
+                </div>
                 <p>{category.resumo}</p>
               </div>
             )}

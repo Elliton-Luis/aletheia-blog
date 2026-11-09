@@ -441,6 +441,27 @@ h1 em { color: var(--muted); font-weight: 400; }
   letter-spacing: 0.06em;
   color: var(--muted);
 }
+.summary-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.summary-header-row .summary-title {
+  margin: 0;
+}
+.ai-notice {
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+.scholia-header .ai-notice {
+  margin-left: auto;
+}
 .aphorismus-summary p {
   margin: 0;
   font-size: 0.93rem;

@@ -54,24 +54,24 @@ export interface GravitasInfo {
 export const GRAVITAS_CONFIG: Record<GravitasLevel, GravitasInfo> = {
   levis: {
     level: 'levis',
-    label: 'Levis',
+    label: 'Simples',
     icon: '🪶',
     multiplier: 1.0,
-    hint: 'Levis (Leve): Texto fluido, focado no cotidiano e frases curtas.',
+    hint: 'Simples: Texto fluido, focado no cotidiano e frases curtas.',
   },
   modicus: {
     level: 'modicus',
-    label: 'Modicus',
+    label: 'Médio',
     icon: '⚖️',
     multiplier: 1.2,
-    hint: 'Modicus (Moderado): Ensaio analítico, estrutura clara de tese/antítese.',
+    hint: 'Médio: Ensaio analítico, estrutura clara de tese/antítese.',
   },
   gravis: {
     level: 'gravis',
-    label: 'Gravis',
+    label: 'Complexo',
     icon: '🧭',
     multiplier: 1.5,
-    hint: 'Gravis (Denso): Altamente filosófico, conceitos abstratos, exige releitura.',
+    hint: 'Complexo: Altamente filosófico, conceitos abstratos, exige releitura.',
   },
 };
 

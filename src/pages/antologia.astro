@@ -186,6 +186,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
                   <div class="scholia-header">
                     <span class="scholia-badge">Marginalia</span>
                     <h3 class="scholia-title">Scholia · Glossário Etimológico</h3>
+                    <span class="ai-notice">Gerado com auxílio de IA</span>
                   </div>
                   <dl class="scholia-list">
                     {meta.scholia.map((item) => (
@@ -215,7 +216,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
                   )}
                   {meta.resumo && (
                     <div class="aphorismus-summary">
-                      <h4 class="summary-title">Síntese Fiel</h4>
+                      <div class="summary-header-row">
+                        <h4 class="summary-title">Síntese Fiel</h4>
+                        <span class="ai-notice">Resumo feito com auxílio de IA</span>
+                      </div>
                       <p>{meta.resumo}</p>
                     </div>
                   )}
