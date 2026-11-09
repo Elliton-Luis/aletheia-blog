@@ -50,7 +50,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .wordmark { display: inline-flex; align-items: center; gap: .5rem; color: var(--ink); font-family: var(--serif); font-size: 1.55rem; font-weight: 700; letter-spacing: -.045em; text-decoration: none; }
 .brand-mark { width: 1.8rem; height: 1.8rem; flex: none; color: var(--accent); fill: transparent; transition: fill .18s ease, transform .18s ease; }
 .wordmark:hover .brand-mark, .wordmark:focus-visible .brand-mark { fill: color-mix(in srgb, var(--accent) 14%, transparent); transform: rotate(-4deg); }
-nav { display: flex; gap: clamp(1.1rem, 3vw, 2.25rem); }
+nav { display: flex; align-items: center; gap: clamp(1.1rem, 3vw, 2.25rem); }
 nav a, .footer-inner a { color: var(--muted); font-size: .9rem; text-decoration: none; }
 nav a:hover, .footer-inner a:hover { color: var(--ink); }
 .icon-link { display: inline-flex; align-items: center; gap: .38rem; }
@@ -65,6 +65,73 @@ nav a:hover, .footer-inner a:hover { color: var(--ink); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .theme-icon-sun { display: block; }
   :root:not([data-theme="light"]) .theme-icon-moon { display: none; }
+}
+
+/* --- Dropdown de Navegação ("Mais") --- */
+.nav-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.nav-dropdown summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  color: var(--muted);
+  font-size: .9rem;
+  transition: color .15s ease;
+}
+.nav-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+.nav-dropdown summary:hover, .nav-dropdown[open] summary {
+  color: var(--ink);
+}
+.dropdown-chevron {
+  width: .85em;
+  height: .85em;
+  margin-left: .15rem;
+  transition: transform .2s ease;
+}
+.nav-dropdown[open] .dropdown-chevron {
+  transform: rotate(180deg);
+}
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + .65rem);
+  right: 0;
+  min-width: 10.5rem;
+  padding: .35rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  z-index: 100;
+}
+.nav-dropdown-menu a,
+.nav-dropdown-menu button {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  border-radius: 2px;
+  color: var(--muted);
+  font-size: .88rem;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: color .15s ease, background-color .15s ease;
+}
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu button:hover {
+  color: var(--ink);
+  background: var(--paper);
 }
 .page-shell { flex: 1 0 auto; width: min(50vw, 56rem); margin-inline: auto; }
 .page-shell-wide { width: min(100% - 3rem, 96rem); }
@@ -334,6 +401,11 @@ h1 em { color: var(--muted); font-weight: 400; }
 .skip-to-summary a {
   color: var(--accent);
   text-underline-offset: .2em;
+}
+.skip-to-summary strong {
+  font-weight: 700;
+  font-style: normal;
+  text-decoration: underline;
 }
 .skip-to-summary a:hover {
   color: var(--ink);

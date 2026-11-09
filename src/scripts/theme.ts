@@ -40,3 +40,11 @@ toggle?.addEventListener('click', () => {
   }
   syncTheme();
 });
+
+// Fecha o dropdown de navegação ao clicar fora dele
+document.addEventListener('click', (event) => {
+  const dropdown = document.querySelector<HTMLDetailsElement>('#nav-dropdown');
+  if (dropdown?.open && !dropdown.contains(event.target as Node)) {
+    dropdown.open = false;
+  }
+});

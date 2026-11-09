@@ -1,5 +1,5 @@
 ---
-type IconName = 'arrow-left' | 'arrow-right' | 'arrow-up' | 'printer' | 'arrow-up-right' | 'book' | 'calendar' | 'mail' | 'moon' | 'pin' | 'rss' | 'search' | 'sun' | 'tag' | 'user';
+type IconName = 'arrow-left' | 'arrow-right' | 'arrow-up' | 'printer' | 'arrow-up-right' | 'book' | 'calendar' | 'mail' | 'moon' | 'pin' | 'rss' | 'search' | 'sun' | 'tag' | 'user' | 'chevron-down';
 
 interface Props {
   name: IconName;
@@ -35,4 +35,5 @@ const { name, class: className } = Astro.props;
   {name === 'sun' && <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>}
   {name === 'tag' && <><path d="M20.6 13.4 13.4 20.6 3 10.2V3h7.2z" /><circle cx="7.5" cy="7.5" r="1" /></>}
   {name === 'user' && <><circle cx="12" cy="8" r="3.5" /><path d="M5 21a7 7 0 0 1 14 0" /></>}
+  {name === 'chevron-down' && <path d="m6 9 6 6 6-6" />}
 </svg>

@@ -1,47 +1,109 @@
-# Aletheia
+# Aletheia · Caderno de Ensaios
 
-Blog pessoal estático feito com Astro. Os ensaios vivem em `src/content/articles/`; cada arquivo Markdown gera sua página, entra no arquivo cronológico e tem suas tags indexadas automaticamente.
+**Aletheia** é um caderno digital de ensaios filosóficos, leituras e investigações sobre conhecimento, razão e sociedade. Construído como um site estático de altíssima performance utilizando [Astro](https://astro.build), tipografia composta na família *Literata* e diagramação editorial minimalista.
 
-O arquivo `/ensaios/` permite filtrar publicações por período. Ao rolar, ele acrescenta os próximos ensaios e retira os mais distantes da tela, preservando a posição de leitura. O botão **Tema** alterna entre claro e escuro e guarda a preferência neste navegador.
+---
 
-Os ensaios e as páginas de assunto são agrupados por mês. Em cada ensaio, o índice lateral acompanha os títulos das seções. O arquivo-fonte `src/content/articles/example.md` fica fora da coleção publicada; seus textos foram separados em artigos próprios.
+## Recursos e Funcionalidades
 
-Guias rápidos: [comandos do projeto](docs/guia-comandos.md) e [Markdown dos ensaios](docs/guia-markdown.md).
+### 1. Arquivo e Leitura de Ensaios (`/ensaios/`)
+- **Virtualização de Lista**: Rola centenas de publicações com fluidez instantânea, reciclando nós do DOM para manter o consumo de memória baixo e preservar a posição de leitura.
+- **Filtros Combinados em Tempo Real**:
+  - **Busca**: Localiza por título, descrição ou tags.
+  - **Período**: Filtro por data inicial e final.
+  - **Filtro de Complexidade**: Alterna instantaneamente entre `Todos`, `Simples` (*Levis*), `Médio` (*Modicus*) e `Complexo` (*Gravis*).
+- **Tempo de Leitura Ponderado**: O cálculo de tempo não se limita a caracteres brutos; ele aplica multiplicadores de densidade (*Gravitas*) conforme a complexidade e abstração do vocabulário do ensaio.
 
-## Começar
+### 2. Diagramação dos Ensaios
+- **Atalho para a Síntese**: Link em destaque no topo do artigo (*"Não tem tempo para ler tudo agora? **Ir direto para a síntese ↓**"*), permitindo saltar diretamente para a síntese.
+- **Índice Lateral (TOC)**: Acompanha a rolagem destacando a seção ativa e os títulos `##` e `###`.
+- **Scholia (Glossário Etimológico)**: Destaque sutil com etimologia grega/latina de termos filosóficos e técnicos.
+- **Aphorismus & Síntese**: O fechamento do ensaio traz uma citação verbatim do próprio autor destacando o núcleo da tese, seguida por um resumo objetivo do conteúdo (com aviso discreto de auxílio de IA).
 
-O projeto inclui o runtime Node.js 22.23.4 como dependência local para que os comandos Astro usem a versão compatível mesmo se o Node global estiver um pouco desatualizado. Para builds na Vercel, configure Node.js 22.23.4 ou mais recente.
+### 3. Antologia & Livreto Personalizado (`/antologia/`)
+- **Monte seu Livrinho**: O leitor pode personalizar seu próprio volume encadernado:
+  - Seleção de **até 10 ensaios** entre os 20 mais recentes (ou via barra de busca).
+  - A capa, o sumário geral com numeração romana (`Capítulo I`, `II`... `X`) e o colofão atualizam em tempo real.
+- **Baixar PDF (A4 Sequencial)**:
+  - Formato tradicional de leitura contínua, com numeração de páginas exclusiva no canto superior direito (`@top-right`), quebras de página por capítulo e zero sobreposição.
+- **Livreto A5 (Dobra & Grampo)**:
+  - **Imposição Booklet 2-Up**: Em cada folha A4 em paisagem, cabem duas páginas A5 (Folha 1 Frente: contracapa + capa; Folha 1 Verso: pág 2 + penúltima... até o miolo).
+  - **Conversor Integrado com `pdf-lib`**: Permite arrastar o PDF gerado para convertê-lo instantaneamente no navegador para um PDF booklet imposto pronto para impressão duplex (virar na borda curta) e dobra.
+
+### 4. Navegação e Interface
+- **Barra Superior Objetiva**: Exibe diretamente os acessos prioritários: `Ensaios`, `Assuntos` e o alternador de `Tema` (claro/escuro persistente).
+- **Menu Dropdown "Mais"**: Agrupa `Antologia`, `Sobre` e o atalho de `Imprimir` (quando na página de leitura).
+
+### 5. Redação Móvel via Telegram Bot (`telegram-bot/`)
+- Bot serverless hospedado em Cloudflare Workers conectado à API do GitHub e Cloudflare Workers AI.
+- **Fluxo de Edição Fluido**: O comando `/editar` envia primeiro as instruções e, em seguida, o texto do ensaio dividido em blocos que respeitam cabeçalhos (`##`), permitindo edição direta pelo chat do celular sem anexos incômodos.
+- Comandos analíticos: `/analise` (análise por duas IAs independentes), `/contrapor` (debate socrático), `/card` (gera card editorial SVG em alta definição), `/ideia` (caderno de rascunhos em KV), `/status` e `/publicar`.
+
+---
+
+## Como Começar Localmente
+
+O projeto inclui o runtime Node.js 22 como dependência para garantir compatibilidade idêntica ao ambiente de produção.
 
 ```sh
+# Instala as dependências
 npm install
+
+# Inicia o servidor local de desenvolvimento
 npm run dev
 ```
 
-## Publicar um ensaio
+Acesse `http://localhost:4321` no navegador.
+
+---
+
+## Criar um Novo Ensaio
 
 ```sh
-npm run criar:ensaio --nome "Conhecimento e inteligência"
+npm run criar:ensaio --nome "Título do seu ensaio"
 ```
 
-Isso cria um arquivo `.md` em `src/content/articles/`, já com o próximo número da sequência (ex.: `0008.conhecimento-e-inteligencia.md`) e o frontmatter básico preenchido. O número organiza a pasta, mas não aparece na URL: o endereço usa só o nome, por exemplo `/ensaios/conhecimento-e-inteligencia/`. Para manter um endereço já publicado, não altere a parte do nome depois de criado.
+O script criará automaticamente o arquivo em `src/content/articles/` com a numeração sequencial correta (ex.: `0011.titulo-do-seu-ensaio.md`) e o frontmatter preenchido:
 
-Veja o [guia de Markdown](docs/guia-markdown.md) para os campos do frontmatter e a formatação do texto, e o [guia de comandos](docs/guia-comandos.md) para build, preview e commit.
+```markdown
+---
+title: "Título do seu ensaio"
+date: 2026-11-09T08:00:00Z
+description: "Uma breve descrição editorial."
+tags: ["filosofia", "sociedade"]
+pinned: false
+gravitas: "modicus" # levis | modicus | gravis
+---
 
-## Configuração antes de publicar
+Texto do ensaio aqui...
+```
 
-1. Em `astro.config.mjs`, troque `https://seudominio.com.br` pelo domínio definitivo (ou domínio `vercel.app`). Esse valor é usado no sitemap e em URLs canônicas.
-2. Ajuste nome, apresentação e texto provisório em `src/layouts/BaseLayout.astro`, `src/pages/index.astro` e `src/pages/sobre.astro`.
-3. Execute `npm run build` para validar e gerar o site em `dist/`.
+Para mais detalhes, consulte:
+- [Guia de Comandos](docs/guia-comandos.md)
+- [Guia de Formatação Markdown](docs/guia-markdown.md)
+
+---
+
+## Build e Validação
+
+```sh
+# Executa a verificação estrita de tipos do Astro e gera o site em dist/
+npm run build
+```
+
+---
 
 ## Deploy na Vercel
 
-1. Crie um repositório no GitHub e envie este projeto com `package.json` e `package-lock.json`.
-2. Na Vercel, selecione **Add New → Project** e importe o repositório GitHub.
-3. Mantenha o preset **Astro**, o comando de build `npm run build` e a pasta de saída `dist`.
-4. Clique em **Deploy**. A Vercel fará novo build automaticamente a cada push na branch conectada.
+1. Suba o repositório para o GitHub.
+2. Na Vercel, clique em **Add New → Project** e selecione o repositório.
+3. Framework Preset: **Astro**.
+4. Node.js Version: **22.x**.
+5. Build Command: `npm run build` | Output Directory: `dist`.
+6. O deploy é 100% estático, com suporte a RSS (`/rss.xml`) e Sitemap (`/sitemap-index.xml`).
 
-Não é necessário adapter para a publicação estática. O RSS é gerado em `/rss.xml` e o sitemap em `/sitemap-index.xml`.
+---
 
-## Publicar pelo celular
+## Licença e Autoria
 
-[`telegram-bot/`](telegram-bot/README.md) é um bot do Telegram, independente deste site, que cria e edita ensaios direto do celular (sem PC), publicando via commit no GitHub. Veja o README dele para instalar — nada ali roda junto com o build do blog.
+Textos e ensaios por **O Eleito**. Todos os direitos reservados.

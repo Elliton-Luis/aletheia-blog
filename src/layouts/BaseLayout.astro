@@ -47,20 +47,28 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         <BrandLogo />
         <nav aria-label="Navegação principal">
           <a class="icon-link" href="/ensaios/"><Icon name="book" /><span>Ensaios</span></a>
-          <a class="icon-link" href="/antologia/"><Icon name="printer" /><span>Antologia</span></a>
           <a class="icon-link" href="/assuntos/"><Icon name="tag" /><span>Assuntos</span></a>
-          <a class="icon-link" href="/sobre/"><Icon name="user" /><span>Sobre</span></a>
-          {showPrint && (
-            <button class="theme-toggle icon-link" id="print-button" type="button" aria-label="Imprimir este ensaio">
-              <Icon name="printer" />
-              <span>Imprimir</span>
-            </button>
-          )}
           <button class="theme-toggle icon-link" id="theme-toggle" type="button" aria-label="Alternar tema" aria-pressed="false">
             <Icon name="moon" class="theme-icon-moon" />
             <Icon name="sun" class="theme-icon-sun" />
             <span>Tema</span>
           </button>
+          <details class="nav-dropdown" id="nav-dropdown">
+            <summary class="icon-link nav-dropdown-trigger" aria-label="Mais opções">
+              <span>Mais</span>
+              <Icon name="chevron-down" class="dropdown-chevron" />
+            </summary>
+            <div class="nav-dropdown-menu">
+              <a class="icon-link" href="/antologia/"><Icon name="printer" /><span>Antologia</span></a>
+              <a class="icon-link" href="/sobre/"><Icon name="user" /><span>Sobre</span></a>
+              {showPrint && (
+                <button class="theme-toggle icon-link nav-dropdown-btn" id="print-button" type="button" aria-label="Imprimir este ensaio">
+                  <Icon name="printer" />
+                  <span>Imprimir</span>
+                </button>
+              )}
+            </div>
+          </details>
         </nav>
       </div>
     </header>
