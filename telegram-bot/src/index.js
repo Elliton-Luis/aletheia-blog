@@ -760,8 +760,8 @@ async function extrairFraseMarcante(env, title, body) {
     try {
       const res = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [
-          { role: "system", content: "Você é um editor literário. Extraia do texto a frase mais impactante, memorável e reflexiva. Retorne APENAS a frase exata do texto (ou síntese de no máximo 25 palavras), sem aspas e sem nenhuma explicação." },
-          { role: "user", content: `Título: ${title}\n\nTexto:\n${body.slice(0, 3000)}` },
+          { role: "system", content: "Você é um editor literário do blog Aletheia. Extraia OBRIGATORIAMENTE uma frase ou conjunto de frases literais contidas no próprio texto do ensaio, que represente a essência do pensamento do autor. NUNCA invente nem parafraseie: use estritamente as palavras do autor tal como constam no texto. Retorne APENAS o trecho exato extraído do texto, sem aspas e sem nenhuma explicação." },
+          { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body.slice(0, 3000)}` },
         ],
         max_tokens: 100,
       });

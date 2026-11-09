@@ -14,7 +14,7 @@ export interface CuratedMeta {
 export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'filosofar-na-era-da-ia': {
     gravitas: 'modicus',
-    aphorismus: 'A comodidade de terceirizar o pensamento rouba a profundidade da alma; pensar, mesmo errando, é o único exercício que mantém o espírito desperto.',
+    aphorismus: 'É importante pensar, mesmo estando errado: estudar a física aristotélica não porque ela é certa, mas porque ela te faz pensar.',
     resumo: 'O ensaio investiga a comodidade de delegar tarefas cognitivas à inteligência artificial e a consequente perda de profundidade crítica. Defende que o valor de estudar e pensar não reside apenas no acerto mecânico, mas na atividade mesma do raciocínio que impede a atrofia do intelecto.',
     scholia: [
       {
@@ -31,7 +31,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'sorte-sucesso-e-injustica': {
     gravitas: 'modicus',
-    aphorismus: 'Lucrar perpetuando a ignorância alheia não é mérito nem virtude; é a forma mais refinada de injustiça disfarçada de sucesso.',
+    aphorismus: 'Aproveitar que a maioria das pessoas não sabe nada e vender um humor besta, perpetuando assim a estupidez social: sabendo o que é melhor, ela escolheu a ignorância ou nunca teve a oportunidade de saber?',
     resumo: 'O autor examina a composição moral do sucesso comercial baseado na exploração da ignorância alheia. Questiona se alimentar a estupidez social para enriquecer é ético e reflete se as pessoas realmente escolhem a ignorância ou se são privadas do discernimento.',
     scholia: [
       {
@@ -48,7 +48,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'verdade-e-mentira-social': {
     gravitas: 'gravis',
-    aphorismus: 'Uma árvore cai mesmo sem testemunhas e a verdade subsiste independente da convenção humana; dourar a mentira por polidez é trair a própria realidade.',
+    aphorismus: 'Uma árvore cai mesmo que ninguém a escute; a gravidade não pede a sua opinião se deve atrair. As coisas são verdades independentes dos seus efeitos.',
     resumo: 'O ensaio confronta a naturalização da falsidade sob o rótulo de convenção social e habilidades relacionais (soft skills). Apoiando-se na anedota de São Tomás de Aquino, afirma a gravidade ontológica da mentira e sustenta que a verdade independe de conveniências ou de efeitos práticos imediatos.',
     scholia: [
       {
@@ -65,7 +65,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'filosofia-teologia-e-artes-liberais': {
     gravitas: 'gravis',
-    aphorismus: 'As artes liberais são as técnicas que libertam o espírito; pretender a alta teologia sem o domínio da linguagem e dos números é construir um templo sobre o vácuo.',
+    aphorismus: 'Se você só sabe o quê das coisas e não sabe o porquê, você é um decorador; você não é uma pessoa que está raciocinando... Arte liberal é a técnica que liberta.',
     resumo: 'Discute os pré-requisitos intelectuais necessários para o estudo da filosofia e da teologia. Explica as sete artes liberais divididas em Trivium (linguagem) e Quadrivium (ciências exatas da lógica e proporção), resgatando o rigor da Academia platônica e a distinção aristotélica entre techne, física e metafísica.',
     scholia: [
       {
@@ -87,7 +87,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'suicidio': {
     gravitas: 'gravis',
-    aphorismus: 'Suicidar-se não é apenas encerrar o pulsar biológico; é matar de antemão tudo aquilo que a consciência poderia ter sido na história viva do mundo.',
+    aphorismus: 'E se o propósito da existência for ser? Nesse sentido, o suicídio é o pior ato da existência: ele seria a própria perda de propósito, um pecado contra a existência.',
     resumo: 'Uma investigação filosófica sobre a lógica, ontologia e temporalidade do suicídio. O texto diferencia vida biológica, vida consciente abstrata e vida biográfica, recorrendo ao conceito aristotélico de Telos e questionando o suicídio gradual em hábitos de anestesia mental e negação da existência.',
     scholia: [
       {
@@ -109,7 +109,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'o-valor-da-etimologia': {
     gravitas: 'levis',
-    aphorismus: 'Conhecer a raiz das palavras é desenterrar a história oculta da civilização: quem ignora a origem dos termos fala como quem repete ecos no escuro.',
+    aphorismus: 'Ao conhecer a origem das palavras você consegue deduzir o significado de palavras desconhecidas, mas saber a origem das palavras lhe permite conhecer histórias que você nunca saberia.',
     resumo: 'Apresenta a etimologia como ciência que desvela a verdade oculta no interior dos vocábulos. Exemplifica como palavras aparentemente comuns — como tchau, escravo e adeus — guardam transformações culturais profundas e mostram o passado da humanidade gravado na linguagem.',
     scholia: [
       {
@@ -126,7 +126,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'sobre-o-sincretismo': {
     gravitas: 'modicus',
-    aphorismus: 'Na antropologia o sincretismo é fusão cultural fecunda; na busca teológica da verdade absoluta, misturar credos contraditórios é diluir a verdade no erro.',
+    aphorismus: 'Se há só Deus, há só uma verdade, e portanto unir duas religiões é misturar a verdade na mentira.',
     resumo: 'Diferencia a avaliação antropológica da avaliação teológica do sincretismo. Aponta que, sob a premissa de que a divindade é única e a verdade não se contradiz, a fusão indiferenciada de crenças divergentes acaba por relativizar a verdade fundamental.',
     scholia: [
       {
@@ -143,7 +143,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'dificultar-para-aprender': {
     gravitas: 'levis',
-    aphorismus: 'Ao fugir do esforço e do atrito, privamo-nos do único terreno fértil onde a mente humana realmente amadurece e aprende.',
+    aphorismus: 'Nós fugimos do difícil sendo que nele é onde mais aprendemos.',
     resumo: 'Ensaio sintético que desafia a aversão moderna à dificuldade. Argumenta que o obstáculo e a resistência intelectual são condições necessárias para a assimilação duradoura do conhecimento.',
     scholia: [
       {
@@ -160,7 +160,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'nunca-devemos-praticar-algo-que-e-possivelmente-mal': {
     gravitas: 'modicus',
-    aphorismus: 'O perigo do erro mínimo não está no dano visível que ele causa, mas na anestesia gradual da consciência que ele lentamente inaugura.',
+    aphorismus: 'Sempre fazer isso vai deixando você insensível e algum dia isso pode ser mais grave do que você espera; correr riscos assim é perigosíssimo, mesmo sendo coisas pequenas.',
     resumo: 'Alerta contra pequenas concessões antiéticas cotidianas cujo impacto material imediato parece desprezível. Mostra como o hábito corrompe a sensibilidade moral por degraus sucessivos, tornando atos graves aceitáveis para quem se habituou às pequenas infrações.',
     scholia: [
       {
@@ -177,7 +177,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   },
   'a-cultura-do-vitimismo-e-a-mentira-necessidade': {
     gravitas: 'gravis',
-    aphorismus: 'Compreender a gênese de uma desilusão histórica explica a dor de um povo, mas tentar vencer a iniquidade com outra iniquidade é perpetuar o próprio cativeiro.',
+    aphorismus: 'Houve sim um motivo para a formação dessa crença, mas nem por isso ela é justa: claramente tentar vencer o mal com outro mal não tem funcionado.',
     resumo: 'Percorre os golpes e rupturas da história republicana brasileira — de 1889 à Era Vargas e ao sacrifício de Tiradentes —, evidenciando a ausência de soberania popular e a manipulação das massas. Conclui que, embora as raízes históricas justifiquem a desconfiança popular, adotar a cultura da trapaça e do vitimismo não soluciona a injustiça.',
     scholia: [
       {
