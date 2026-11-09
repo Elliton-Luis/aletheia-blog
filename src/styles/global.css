@@ -283,377 +283,163 @@ h1 em { color: var(--muted); font-weight: 400; }
   }
 }
 
-/* --- Metadados Clássicos, Gravitas & Medidor Analógico --- */
+/* --- Chamada da Antologia --- */
 .archive-anthology-callout {
-  margin-top: 1.2rem;
-  padding: 0.75rem 1rem;
-  background: var(--paper-raised);
-  border-left: 3px solid var(--accent);
-  border-radius: 4px;
-  font-size: 0.92rem;
+  margin-top: .75rem;
+  font-size: .9rem;
 }
 .archive-anthology-callout a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  color: var(--muted);
   text-decoration: none;
-  color: var(--ink);
 }
 .archive-anthology-callout a:hover {
-  color: var(--accent);
+  color: var(--ink);
 }
 
+/* --- Atalho para a síntese --- */
 .skip-to-summary {
-  margin: 0.5rem 0 1.2rem;
-  font-size: 0.88rem;
+  margin: .4rem 0 1rem;
+  font-size: .88rem;
   font-style: italic;
   color: var(--muted);
 }
-.skip-summary-link {
+.skip-to-summary a {
   color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 0.22em;
-  font-weight: 500;
-  font-style: normal;
+  text-underline-offset: .2em;
 }
-.skip-summary-link:hover {
+.skip-to-summary a:hover {
   color: var(--ink);
 }
 
-/* --- Scholia: Glossário Etimológico Curado --- */
-.scholia-box {
-  margin-top: 2.8rem;
-  padding: 1.4rem 1.6rem;
+/* --- Scholia e Síntese (Destaque sutil mudando levemente o tom) --- */
+.post-scholia, .post-summary-section {
+  margin-top: 2.2rem;
+  padding: 1.25rem 1.4rem;
   background: var(--paper-raised);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  border-radius: 4px;
 }
-.scholia-header {
+.post-scholia .eyebrow, .post-summary-section .eyebrow {
+  margin-bottom: .6rem;
   display: flex;
   align-items: baseline;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px dashed var(--line);
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .4rem;
 }
-.scholia-badge {
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-}
-.scholia-header h2, .scholia-header h3 {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--ink);
+.ai-tag {
+  font-size: .72rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  font-style: italic;
 }
 .scholia-list {
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: .65rem;
 }
-.scholia-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.scholia-term {
-  font-family: var(--serif);
-  font-size: 1.02rem;
+.scholia-item dt {
   color: var(--ink);
+  font-size: .94rem;
 }
-.scholia-etymology {
-  margin-left: 0.4rem;
-  font-size: 0.88rem;
-  font-style: italic;
+.scholia-item dt em {
   color: var(--muted);
+  font-size: .86rem;
+  margin-left: .35rem;
+  font-style: italic;
 }
-.scholia-meaning {
-  margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.55;
+.scholia-item dd {
+  margin: .1rem 0 0;
   color: var(--ink);
-}
-
-/* --- Aphorismus & Síntese Fiel --- */
-.aphorismus-box {
-  margin-top: 1.8rem;
-  padding: 1.5rem 1.6rem;
-  background: color-mix(in srgb, var(--paper-raised) 92%, var(--accent));
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--ink);
-  border-radius: 4px;
-}
-.aphorismus-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px dashed var(--line);
-}
-.aphorismus-badge {
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-}
-.aphorismus-header h2, .aphorismus-header h3 {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--ink);
+  font-size: .94rem;
+  line-height: 1.6;
 }
 .aphorismus-quote {
-  margin: 0 0 1rem;
-  padding: 0.5rem 0.8rem;
-  border-left: 2px solid var(--accent);
-  background: transparent;
+  margin: 0 0 .75rem;
+  padding: .2rem 0 .2rem 1rem;
+  border-left: 2px solid var(--line);
   font-family: var(--serif);
-  font-size: 1.08rem;
+  font-size: 1.05rem;
   font-style: italic;
-  line-height: 1.6;
   color: var(--ink);
 }
 .aphorismus-quote p {
   margin: 0;
 }
-.aphorismus-summary {
-  margin-top: 0.8rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
-}
-.summary-title {
-  margin: 0 0 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-.summary-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
-}
-.summary-header-row .summary-title {
+.summary-text {
   margin: 0;
-}
-.ai-notice {
-  font-family: var(--sans);
-  font-size: 0.74rem;
-  color: var(--muted);
-  font-style: italic;
-  letter-spacing: 0.02em;
-}
-.scholia-header .ai-notice {
-  margin-left: auto;
-}
-.aphorismus-summary p {
-  margin: 0;
-  font-size: 0.93rem;
-  line-height: 1.6;
+  font-size: .94rem;
+  line-height: 1.65;
   color: var(--ink);
 }
 
-/* --- Antologia / Edição Encadernada em Livro --- */
-.antologia-page {
-  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 50rem), var(--paper);
-}
-.antologia-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 99;
-  background: color-mix(in srgb, var(--paper-raised) 94%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--line);
-  padding: 0.75rem 1.5rem;
-}
-.toolbar-inner {
-  max-width: 54rem;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.back-to-blog {
-  text-decoration: none;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-.back-to-blog:hover {
-  color: var(--ink);
-}
-.toolbar-title {
-  font-size: 0.95rem;
-  color: var(--ink);
-}
-.print-antologia-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: var(--ink);
-  color: var(--paper);
-  border: 1px solid var(--ink);
-  padding: 0.45rem 0.95rem;
-  border-radius: 4px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-.print-antologia-btn:hover {
-  opacity: 0.88;
-}
-.toolbar-tip {
-  max-width: 54rem;
-  margin: 0.35rem auto 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-align: right;
-}
-
-.antologia-main {
-  width: 100%;
-  padding: 2.5rem 1rem 6rem;
-}
-.book-container {
-  max-width: 46rem;
+/* --- Edição Encadernada (Antologia) --- */
+.antologia-book {
+  max-width: 44rem;
   margin: 0 auto;
 }
-
-/* Capa do Livro */
 .book-cover {
-  padding: 6rem 2rem 5rem;
-  margin-bottom: 4rem;
-  background: var(--paper-raised);
-  border: 1px solid var(--line);
   text-align: center;
-  box-shadow: 0 4px 20px color-mix(in srgb, var(--ink) 4%, transparent);
+  padding: 4rem 1rem 3.5rem;
+  margin-bottom: 3.5rem;
+  border-bottom: 1px solid var(--line);
 }
-.cover-top-ornament {
-  font-size: 1rem;
-  letter-spacing: 0.6em;
-  color: var(--accent);
-  margin-bottom: 2rem;
+.book-cover .eyebrow {
+  margin-bottom: .6rem;
 }
-.cover-label {
-  display: block;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--muted);
-  margin-bottom: 0.75rem;
-}
-.cover-title {
-  margin: 0;
+.book-title {
+  margin: 0 0 .5rem;
   font-family: var(--serif);
-  font-size: 3.4rem;
-  letter-spacing: 0.12em;
+  font-size: 2.8rem;
   font-weight: 700;
+  letter-spacing: -.02em;
   color: var(--ink);
 }
-.cover-subtitle {
-  max-width: 28rem;
-  margin: 1.2rem auto 0;
+.book-subtitle {
+  margin: 0 auto 2rem;
+  max-width: 26rem;
   font-family: var(--serif);
-  font-size: 1.2rem;
-  font-style: italic;
-  line-height: 1.5;
-  color: var(--muted);
-}
-.cover-divider {
-  margin: 3.5rem auto;
-  width: 6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-.cover-divider::before, .cover-divider::after {
-  content: "";
-  flex: 1;
-  border-bottom: 1px solid var(--line);
-}
-.cover-monogram {
-  padding: 0 0.8rem;
-  font-family: var(--serif);
-  font-size: 1.4rem;
-  color: var(--accent);
-}
-.cover-volume {
-  margin: 0 0 0.4rem;
-  font-size: 0.95rem;
-  color: var(--muted);
-}
-.cover-author {
-  margin: 0 0 0.3rem;
   font-size: 1.1rem;
-}
-.cover-year {
-  margin: 0;
-  font-size: 0.85rem;
+  font-style: italic;
   color: var(--muted);
-  letter-spacing: 0.08em;
+  line-height: 1.5;
 }
-
-/* Prefácio */
+.book-cover-meta {
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.6;
+}
+.book-cover-meta p {
+  margin: 0;
+}
 .book-preface {
-  padding: 3rem 0;
+  padding-bottom: 3rem;
   margin-bottom: 3.5rem;
-  border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-}
-.section-kicker {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-  margin-bottom: 0.3rem;
-}
-.preface-header h2, .toc-header h2 {
-  margin: 0 0 1.5rem;
-  font-family: var(--serif);
-  font-size: 1.8rem;
 }
 .manifesto-quote {
   margin: 0;
-  padding: 1.2rem 1.6rem;
-  background: var(--paper-raised);
-  border-left: 3px solid var(--accent);
+  padding: .2rem 0 .2rem 1.2rem;
+  border-left: 2px solid var(--line);
   font-family: var(--serif);
   font-size: 1.05rem;
   line-height: 1.7;
+  color: var(--ink);
 }
 .manifesto-quote p {
-  margin: 0 0 1rem;
+  margin: 0 0 .8rem;
 }
-.manifesto-signature {
-  display: block;
-  font-style: italic;
+.manifesto-quote footer {
   text-align: right;
+  font-style: italic;
   color: var(--muted);
 }
-
-/* Sumário */
 .book-toc {
-  padding: 2rem 0 3rem;
-  margin-bottom: 4rem;
+  padding-bottom: 3rem;
+  margin-bottom: 3.5rem;
   border-bottom: 1px solid var(--line);
 }
 .book-toc-list {
@@ -662,116 +448,66 @@ h1 em { color: var(--muted); font-weight: 400; }
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: .65rem;
 }
-.book-toc-item {
-  font-size: 0.95rem;
-}
-.book-toc-link {
+.book-toc-list a {
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
+  gap: .5rem;
   text-decoration: none;
   color: var(--ink);
+  font-size: .95rem;
 }
-.book-toc-link:hover {
+.book-toc-list a:hover {
   color: var(--accent);
 }
 .toc-roman {
-  font-weight: 700;
-  font-variant: small-caps;
+  min-width: 6.2rem;
+  font-weight: 650;
   color: var(--accent);
-  min-width: 6.5rem;
+  font-variant: small-caps;
 }
 .toc-title {
   font-family: var(--serif);
-  font-weight: 500;
 }
 .toc-dots {
   flex: 1;
   border-bottom: 1px dotted var(--line);
-  margin: 0 0.4rem;
+  margin: 0 .25rem;
 }
-.toc-badge {
-  font-size: 0.78rem;
+.toc-meta {
   color: var(--muted);
+  font-size: .78rem;
   white-space: nowrap;
 }
-
-/* Capítulos */
 .book-chapter {
-  padding: 3.5rem 0 4rem;
+  padding: 3rem 0 3.5rem;
   border-top: 1px solid var(--line);
 }
-.chapter-number {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--accent);
-  font-weight: 700;
-  margin-bottom: 0.4rem;
+.book-chapter .chapter-header {
+  margin-bottom: 1.5rem;
 }
-.chapter-title {
-  margin: 0 0 0.8rem;
+.book-chapter .chapter-title {
+  margin: .3rem 0 .5rem;
   font-family: var(--serif);
-  font-size: 2.1rem;
-  line-height: 1.25;
+  font-size: 1.85rem;
+  line-height: 1.3;
 }
-.chapter-deck {
-  margin: 0 0 1rem;
-  font-family: var(--serif);
-  font-size: 1.1rem;
-  font-style: italic;
-  color: var(--muted);
-  line-height: 1.5;
-}
-.chapter-metrics {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.6rem;
-  margin-bottom: 2rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.metric-sep {
-  color: var(--line);
-}
-.chapter-body {
-  font-size: 1.05rem;
-  line-height: 1.75;
-}
-.chapter-scholia {
-  margin-top: 2.5rem;
-}
-.chapter-aphorismus {
-  margin-top: 1.6rem;
-}
-
-/* Colofão */
 .book-colophon {
-  margin-top: 5rem;
-  padding: 3rem 1.5rem;
-  text-align: center;
+  margin-top: 4rem;
+  padding-top: 2rem;
   border-top: 1px solid var(--line);
+  text-align: center;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: .88rem;
 }
-.colophon-ornament {
-  font-size: 1.5rem;
-  color: var(--accent);
-  margin-bottom: 0.8rem;
+.book-colophon p {
+  margin: 0 0 .4rem;
 }
-.book-colophon h3 {
-  margin: 0 0 0.6rem;
-  font-family: var(--serif);
-  font-size: 1.2rem;
-  color: var(--ink);
-}
-.colophon-author {
-  margin-top: 1.2rem;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
+.colophon-credit {
+  font-size: .78rem;
+  letter-spacing: .08em;
+  font-variant: small-caps;
 }
 
 @media print {
@@ -830,17 +566,15 @@ h1 em { color: var(--muted); font-weight: 400; }
   .post-contact { color: #333; }
 
   /* Antologia & Elementos Especiais na Impressão */
-  .no-print, .antologia-toolbar, .skip-to-summary { display: none !important; }
-  .antologia-main { padding: 0 !important; }
-  .book-container { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .antologia-page-heading, .skip-to-summary { display: none !important; }
+  .antologia-book { max-width: none !important; margin: 0 !important; }
   .book-cover {
     min-height: 80vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    border: 2px solid #aaa69c !important;
-    box-shadow: none !important;
-    padding: 4rem 2rem !important;
+    border: 0 !important;
+    padding: 2rem 0 !important;
     break-after: page;
     page-break-after: always;
   }
@@ -869,7 +603,7 @@ h1 em { color: var(--muted); font-weight: 400; }
     page-break-before: always;
     border-color: #aaa69c !important;
   }
-  .scholia-box, .aphorismus-box {
+  .post-scholia, .post-summary-section {
     break-inside: avoid-page;
     page-break-inside: avoid;
     border-color: #aaa69c !important;

@@ -1,13 +1,10 @@
 ---
 import { getCollection, render } from 'astro:content';
-import Icon from '../components/Icon.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import { classify, formatDate } from '../utils/articles';
-import '../styles/global.css';
-import '@fontsource-variable/literata/opsz.css';
-import '@fontsource-variable/literata/opsz-italic.css';
 
 const allArticles = await getCollection('articles');
-// Ordena cronologicamente (Capítulo 1 ao 10)
+// Ordena cronologicamente (Capítulo I ao X)
 const articles = allArticles.sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
 
 function toRoman(num: number): string {
@@ -41,206 +38,128 @@ const renderedChapters = await Promise.all(
     };
   })
 );
-
-const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
-<!doctype html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Antologia Completa · Volume I · Aletheia</title>
-    <meta name="description" content="Edição encadernada reunindo todos os dez ensaios do caderno Aletheia, diagramada para impressão e leitura em PDF." />
-    <meta name="author" content="O Eleito" />
-    <link rel="canonical" href={canonical} />
-    <script is:inline>
-      try {
-        const theme = localStorage.getItem('aletheia-theme');
-        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
-      } catch {}
-    </script>
-  </head>
-  <body class="antologia-page">
-    <!-- Barra de navegação e exportação (visível apenas na tela, oculta na impressão) -->
-    <header class="antologia-toolbar no-print" aria-label="Ações da Antologia">
-      <div class="toolbar-inner">
-        <a class="icon-link back-to-blog" href="/ensaios/">
-          <Icon name="arrow-left" />
-          <span>Voltar aos Ensaios</span>
-        </a>
-        <div class="toolbar-title">
-          <strong>Antologia Aletheia</strong> · Volume I (10 Ensaios)
-        </div>
-        <div class="toolbar-actions">
-          <button class="print-antologia-btn" type="button" onclick="window.print()">
-            <Icon name="printer" />
-            <span>Salvar em PDF / Imprimir</span>
-          </button>
-        </div>
+<BaseLayout
+  title="Antologia · Volume I"
+  description="Edição encadernada reunindo todos os dez ensaios do caderno Aletheia para leitura contínua ou impressão em PDF."
+  wide
+  showPrint
+>
+  <header class="page-heading antologia-page-heading">
+    <p class="eyebrow">Edição Encadernada</p>
+    <h1>Antologia · Volume I</h1>
+    <p>Todos os dez ensaios reunidos em volume único. Use o botão «Imprimir» no topo para salvar em PDF.</p>
+  </header>
+
+  <div class="antologia-book">
+    <!-- CAPA (Página 1 na impressão) -->
+    <section class="book-cover">
+      <p class="eyebrow">Caderno de Ensaios</p>
+      <h2 class="book-title">Aletheia</h2>
+      <p class="book-subtitle">Uma Investigação Filosófica sobre Conhecimento, Sociedade e Razão</p>
+      <div class="book-cover-meta">
+        <p>Volume I · Compilação Completa dos Dez Ensaios</p>
+        <p>Por <strong>O Eleito</strong></p>
+        <p>2026</p>
       </div>
-      <p class="toolbar-tip">
-        Dica de exportação: No menu de impressão do navegador, escolha a impressora <em>"Salvar como PDF"</em>. A numeração de página sairá automaticamente no canto superior direito, fora da mancha de texto.
+    </section>
+
+    <!-- PREFÁCIO (Página 2 na impressão) -->
+    <section class="book-preface">
+      <p class="eyebrow">Prefácio</p>
+      <blockquote class="manifesto-quote">
+        <p>
+          «Em tempos de vazio intelectual, tento trazer meus pensamentos para este espaço.
+          Nada do que escrevo aqui é necessariamente verdade, e não há pretensão de rigor acadêmico:
+          são pensamentos filosóficos, perguntas e tentativas de compreender o mundo.
+        </p>
+        <p>
+          Aristóteles escreveu sobre a física com os conhecimentos de seu tempo; muitas de suas explicações
+          hoje estão superadas. Ainda assim, o valor daquele trabalho não depende apenas de ter acertado.
+          Está também no exercício de observar, perguntar e pensar.
+        </p>
+        <p>
+          É esse exercício que quero registrar aqui: um pensamento em processo, sujeito a dúvidas, mudanças e erros.
+          O importante não é apenas estar certo, mas se permitir pensar.»
+        </p>
+        <footer>— O Eleito</footer>
+      </blockquote>
+    </section>
+
+    <!-- SUMÁRIO GERAL (Página 3 na impressão) -->
+    <section class="book-toc">
+      <p class="eyebrow">Sumário Geral</p>
+      <ol class="book-toc-list">
+        {renderedChapters.map(({ article, meta, chapterNum, roman }) => (
+          <li>
+            <a href={`#capitulo-${chapterNum}`}>
+              <span class="toc-roman">Capítulo {roman}</span>
+              <span class="toc-title">{article.data.title}</span>
+              <span class="toc-dots" aria-hidden="true"></span>
+              <span class="toc-meta">Complexidade: {meta.gravitas.label} · {meta.minutes} min</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <!-- OS DEZ CAPÍTULOS -->
+    <div class="book-chapters">
+      {renderedChapters.map(({ article, Content, meta, chapterNum, roman }) => (
+        <article class="book-chapter" id={`capitulo-${chapterNum}`}>
+          <header class="chapter-header">
+            <p class="post-class">
+              Capítulo {roman} · <strong>{meta.name}</strong> · {meta.formatted} caracteres · Complexidade: {meta.gravitas.label} · {meta.minutes} min
+            </p>
+            <h2 class="chapter-title">{article.data.title}</h2>
+            <p class="post-deck">{article.data.description}</p>
+            <time datetime={article.data.date.toISOString()}>{formatDate(article.data.date)}</time>
+          </header>
+
+          <div class="prose">
+            <Content />
+          </div>
+
+          {meta.scholia.length > 0 && (
+            <section class="post-scholia" aria-label="Scholia deste capítulo">
+              <p class="eyebrow">Scholia · Glossário Etimológico <span class="ai-tag">Gerado com auxílio de IA</span></p>
+              <dl class="scholia-list">
+                {meta.scholia.map((item) => (
+                  <div class="scholia-item">
+                    <dt><strong>{item.term}</strong> <em class="scholia-etymology">{item.etymology}</em></dt>
+                    <dd>{item.meaning}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {(meta.aphorismus || meta.resumo) && (
+            <section class="post-summary-section" aria-label="Síntese deste capítulo">
+              <p class="eyebrow">Síntese do Ensaio <span class="ai-tag">Resumo feito com auxílio de IA</span></p>
+              {meta.aphorismus && (
+                <blockquote class="aphorismus-quote">
+                  <p>«{meta.aphorismus}»</p>
+                </blockquote>
+              )}
+              {meta.resumo && (
+                <p class="summary-text">{meta.resumo}</p>
+              )}
+            </section>
+          )}
+        </article>
+      ))}
+    </div>
+
+    <!-- COLOFÃO FINAL -->
+    <footer class="book-colophon">
+      <p class="eyebrow">Colofão</p>
+      <p>
+        Este volume reúne os dez ensaios seminais publicados no caderno digital <strong>Aletheia</strong>.
+        Tipografia composta em <em>Literata</em>.
       </p>
-    </header>
-
-    <main class="antologia-main">
-      <div class="book-container">
-
-        <!-- CAPA DO LIVRO -->
-        <section class="book-cover" id="capa">
-          <div class="cover-top-ornament">✦ ✦ ✦</div>
-          <div class="cover-header">
-            <span class="cover-label">Caderno de Ensaios & Reflexões</span>
-            <h1 class="cover-title">ALETHEIA</h1>
-            <p class="cover-subtitle">Uma Investigação Filosófica sobre Conhecimento, Sociedade e Razão</p>
-          </div>
-          <div class="cover-divider">
-            <span class="cover-monogram">§</span>
-          </div>
-          <div class="cover-footer">
-            <p class="cover-volume">Volume I · Compilação Completa dos Dez Ensaios</p>
-            <p class="cover-author">Por <strong>O Eleito</strong></p>
-            <p class="cover-year">2026</p>
-          </div>
-        </section>
-
-        <!-- PREFÁCIO / MANIFESTO DO AUTOR -->
-        <section class="book-preface" id="prefacio">
-          <header class="preface-header">
-            <p class="section-kicker">Abertura Editorial</p>
-            <h2>Prefácio</h2>
-          </header>
-          <div class="preface-content">
-            <blockquote class="manifesto-quote">
-              <p>
-                «Em tempos de vazio intelectual, tento trazer meus pensamentos para este espaço.
-                Nada do que escrevo aqui é necessariamente verdade, e não há pretensão de rigor acadêmico:
-                são pensamentos filosóficos, perguntas e tentativas de compreender o mundo.
-              </p>
-              <p>
-                Aristóteles escreveu sobre a física com os conhecimentos de seu tempo; muitas de suas explicações
-                hoje estão superadas. Ainda assim, o valor daquele trabalho não depende apenas de ter acertado.
-                Está também no exercício de observar, perguntar e pensar.
-              </p>
-              <p>
-                É esse exercício que quero registrar aqui: um pensamento em processo, sujeito a dúvidas, mudanças e erros.
-                O importante não é apenas estar certo, mas se permitir pensar.»
-              </p>
-              <cite class="manifesto-signature">— O Eleito</cite>
-            </blockquote>
-          </div>
-        </section>
-
-        <!-- SUMÁRIO GERAL -->
-        <section class="book-toc" id="sumario">
-          <header class="toc-header">
-            <p class="section-kicker">Índice</p>
-            <h2>Sumário Geral</h2>
-          </header>
-          <ol class="book-toc-list">
-            {renderedChapters.map(({ article, meta, chapterNum, roman }) => (
-              <li class="book-toc-item">
-                <a href={`#capitulo-${chapterNum}`} class="book-toc-link">
-                  <span class="toc-roman">Capítulo {roman}</span>
-                  <span class="toc-title">{article.data.title}</span>
-                  <span class="toc-dots" aria-hidden="true"></span>
-                  <span class="toc-badge">Complexidade: {meta.gravitas.label} · {meta.minutes} min</span>
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <!-- OS DEZ CAPÍTULOS / ENSAIOS COMPLETOS -->
-        <div class="book-chapters">
-          {renderedChapters.map(({ article, Content, meta, chapterNum, roman }) => (
-            <article class="book-chapter" id={`capitulo-${chapterNum}`}>
-              <header class="chapter-header">
-                <div class="chapter-number">Capítulo {roman}</div>
-                <h2 class="chapter-title">{article.data.title}</h2>
-                <p class="chapter-deck">{article.data.description}</p>
-                <div class="chapter-metrics">
-                  <span class="metric-item"><strong>{meta.name}</strong></span>
-                  <span class="metric-sep">·</span>
-                  <span class="metric-item">{formatDate(article.data.date)}</span>
-                  <span class="metric-sep">·</span>
-                  <span class="metric-item" title={meta.gravitas.hint}>
-                    Complexidade: {meta.gravitas.label}
-                  </span>
-                  <span class="metric-sep">·</span>
-                  <span class="metric-item">
-                    {meta.minutes} min
-                  </span>
-                </div>
-              </header>
-
-              <div class="chapter-body prose">
-                <Content />
-              </div>
-
-              <!-- Scholia (Glossário Etimológico ao final de cada capítulo) -->
-              {meta.scholia.length > 0 && (
-                <section class="scholia-box chapter-scholia" aria-label="Scholia deste capítulo">
-                  <div class="scholia-header">
-                    <span class="scholia-badge">Marginalia</span>
-                    <h3 class="scholia-title">Scholia · Glossário Etimológico</h3>
-                    <span class="ai-notice">Gerado com auxílio de IA</span>
-                  </div>
-                  <dl class="scholia-list">
-                    {meta.scholia.map((item) => (
-                      <div class="scholia-item">
-                        <dt>
-                          <strong class="scholia-term">{item.term}</strong>
-                          <span class="scholia-etymology">{item.etymology}</span>
-                        </dt>
-                        <dd class="scholia-meaning">{item.meaning}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              )}
-
-              <!-- Aphorismus & Síntese Fiel do Capítulo -->
-              {(meta.aphorismus || meta.resumo) && (
-                <section class="aphorismus-box chapter-aphorismus" aria-label="Aphorismus e Síntese">
-                  <div class="aphorismus-header">
-                    <span class="aphorismus-badge">Aphorismus & Síntese</span>
-                    <h3 class="aphorismus-title">Destilação do Ensaio</h3>
-                  </div>
-                  {meta.aphorismus && (
-                    <blockquote class="aphorismus-quote">
-                      <p>«{meta.aphorismus}»</p>
-                    </blockquote>
-                  )}
-                  {meta.resumo && (
-                    <div class="aphorismus-summary">
-                      <div class="summary-header-row">
-                        <h4 class="summary-title">Síntese Fiel</h4>
-                        <span class="ai-notice">Resumo feito com auxílio de IA</span>
-                      </div>
-                      <p>{meta.resumo}</p>
-                    </div>
-                  )}
-                </section>
-              )}
-            </article>
-          ))}
-        </div>
-
-        <!-- COLOFÃO FINAL -->
-        <footer class="book-colophon">
-          <div class="colophon-ornament">❦</div>
-          <h3>Colofão</h3>
-          <p>
-            Este volume reúne os dez ensaios seminais publicados no caderno digital <strong>Aletheia</strong>.
-            Tipografia composta em <em>Literata</em>, desenhada por TypeTogether.
-          </p>
-          <p class="colophon-author">© O Eleito · Todos os direitos reservados</p>
-        </footer>
-
-      </div>
-    </main>
-  </body>
-</html>
+      <p class="colophon-credit">© O Eleito</p>
+    </footer>
+  </div>
+</BaseLayout>
