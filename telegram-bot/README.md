@@ -19,6 +19,7 @@ o conteúdo dos ensaios segue as mesmas regras.
 /criar      — novo ensaio
 /editar     — busca um ensaio e altera
 /listar     — busca um ensaio só para ler
+/analise    — busca um ensaio para análise crítica com IA (IA A e IA B)
 /deletar    — busca um ensaio e agenda a exclusão (20 minutos)
 /rascunhos  — retoma um ensaio salvo com /rascunho (durante o /escrever)
 /link       — manda o link do site
@@ -67,11 +68,12 @@ Duas formas:
 
 A data é sempre a de hoje; para mudar depois, use `/editar`.
 
-### `/editar` e `/listar`
+### `/editar`, `/listar` e `/analise`
 
-Os dois buscam do mesmo jeito: `/editar` lista todos os ensaios paginados de 10 em 10, ou `/editar palavra` filtra pelo nome do arquivo (`/listar` igual). Você toca no ensaio na lista.
+Eles buscam do mesmo jeito: `/editar`, `/listar` ou `/analise` lista todos os ensaios paginados de 10 em 10, ou aceita um filtro por termo (ex.: `/analise vargas`). Você toca no ensaio na lista:
 
 - **`/listar`:** mostra o conteúdo (como texto, ou como arquivo `.md` se for grande demais para uma mensagem do Telegram — limite de ~4096 caracteres) junto com o link do ensaio no site. Não dá para alterar por aqui.
+- **`/analise`:** consulta **duas IAs independentes (IA A e IA B)** com o manifesto filosófico do blog para trazer uma análise aprofundada de reflexões, argumentações e sugestões, com pontuação estritamente como última prioridade.
 - **`/editar`:** mostra o conteúdo do mesmo jeito. Copie, edite (no próprio chat ou num editor, tanto faz) e mande de volta — como texto ou como arquivo. Depois, decida o que fazer com o que você mandou:
   - **`/reescrever`** — substitui o ensaio inteiro pelo que você mandou (precisa vir com o frontmatter completo).
   - **`/colar`** — acrescenta o que você mandou no fim do ensaio original, como um apêndice (não mexe no frontmatter).

@@ -14,6 +14,7 @@
 const AJUDA_IDLE = `/criar — novo ensaio
 /editar — busca um ensaio pra alterar
 /listar — busca um ensaio só pra ler
+/analise — busca um ensaio para análise crítica com IA
 /deletar — busca um ensaio pra apagar
 /rascunhos — retoma um rascunho salvo
 /link — manda o link do site
@@ -64,7 +65,7 @@ export default {
 
   // Roda a cada minuto (ver [triggers] no wrangler.toml): executa as
   // exclusões agendadas pelo /deletar cujos 20 minutos já passaram.
-  async scheduled(event, env, ctx) {
+  async scheduled(_event, env, ctx) {
     ctx.waitUntil(processarExclusoesPendentes(env).catch((err) => console.error(err)));
   },
 };
@@ -136,8 +137,13 @@ async function handleUpdate(update, env) {
   if (text?.startsWith("/editar")) {
     return startBusca(env, chatId, text.replace("/editar", "").trim().toLowerCase(), "editar");
   }
-  if (text?.startsWith("/listar")) {
-    return startBusca(env, chatId, text.replace("/listar", "").trim().toLowerCase(), "listar");
+  if (text?.startsWith("/listar") || text?.startsWith("/lista")) {
+    const termo = text.replace(/^\/(listar|lista)/, "").trim().toLowerCase();
+    return startBusca(env, chatId, termo, "listar");
+  }
+  if (text?.startsWith("/analise") || text?.startsWith("/analisar")) {
+    const termo = text.replace(/^\/(analise|analisar)/, "").trim().toLowerCase();
+    return startBusca(env, chatId, termo, "analise");
   }
   if (text?.startsWith("/deletar")) {
     return startBusca(env, chatId, text.replace("/deletar", "").trim().toLowerCase(), "deletar");
@@ -204,7 +210,7 @@ async function handleCallback(cq, env) {
     });
   }
 
-  // Escolheu um ensaio na lista (/editar, /listar ou /deletar)
+  // Escolheu um ensaio na lista (/editar, /listar, /analise ou /deletar)
   if (data.startsWith("ed:")) {
     const list = await env.KV.get(listKey(chatId), "json");
     const path = list?.paths[Number(data.slice(3))];
@@ -212,6 +218,7 @@ async function handleCallback(cq, env) {
     if (list.acao === "listar") return sendForReading(env, chatId, path);
     if (list.acao === "deletar") return scheduleDelete(env, chatId, path);
     if (list.acao === "rascunho") return resumeDraft(env, chatId, path);
+    if (list.acao === "analise") return runArticleAnalysis(env, chatId, path);
     return sendForEditing(env, chatId, path);
   }
 }
@@ -353,21 +360,34 @@ function buildMarkdown({ title, date, description, tags, pinned }, body) {
 // IA: Análise Editorial Dupla (IA A e IA B)
 // =====================================================================
 
+const MANIFESTO_AUTOR = `Em tempos de vazio intelectual, tento trazer meus pensamentos para este espaço. Nada do que escrevo aqui é necessariamente verdade, e não há pretensão de rigor acadêmico: são pensamentos filosóficos, perguntas e tentativas de compreender o mundo.
+
+Aristóteles escreveu sobre a física com os conhecimentos de seu tempo; muitas de suas explicações hoje estão superadas. Ainda assim, o valor daquele trabalho não depende apenas de ter acertado. Está também no exercício de observar, perguntar e pensar.
+
+É esse exercício que quero registrar aqui: um pensamento em processo, sujeito a dúvidas, mudanças e erros. O importante não é apenas estar certo, mas se permitir pensar.`;
+
 const PROMPT_REVISAO = `Você é um leitor crítico e conselheiro editorial do blog Aletheia.
 Sua função NÃO é ter a resposta final, ditar regras ou reescrever o texto no seu estilo; a voz, o estilo e todas as decisões pertencem exclusivamente ao autor.
 Sua missão é apenas oferecer perspectivas, reflexões construtivas e apontar possíveis ambiguidades para reflexão do autor.
 
+Contexto e manifesto fundamental do autor:
+"${MANIFESTO_AUTOR}"
+
+Diretrizes essenciais:
+1. O foco prioritário deve ser o exercício do pensamento, a consistência reflexiva, as conexões filosóficas e o desenvolvimento das ideias (um pensamento em processo, aberto a dúvidas e exploração).
+2. Pode e deve mencionar pontuação e aspectos formais do texto, mas estritamente como a ÚLTIMA prioridade da análise.
+
 Estruture sua resposta de forma concisa e elegante com as seguintes seções (use emojis):
 
 💡 Reflexões e Argumentação
-(Pontos fortes da tese e aspectos que poderiam ser mais claros, aprofundados ou que levantam dúvidas/ambiguidades)
-
-✍️ Apontamentos Textuais
-(Sugestões pontuais sobre ritmo, fluidez ou pequenos deslizes gramaticais/pontuação — sempre em tom de sugestão opcional)
+(Pontos fortes da tese, desdobramentos filosóficos e aspectos que poderiam ser mais claros ou que levantam dúvidas produtivas)
 
 ✨ Sugestões para o Autor
-- Sugestão de divisão em subtítulos (##) se ajudar na organização visual
+- Perguntas instigantes para levar a reflexão ainda mais longe
 - Uma frase marcante do texto que se destaca
+
+✍️ Pontuação e Aspectos Formais (Última prioridade)
+(Apontamentos sobre pontuação, ritmo ou fluidez sintática, como última prioridade e sempre em tom de sugestão opcional)
 
 Responda em português, de forma concisa e respeitosa.`;
 
@@ -388,7 +408,7 @@ async function consultarIaA(env, title, body) {
             { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
           ],
           temperature: 0.3,
-          max_tokens: 1200,
+          max_tokens: 1500,
         }),
       });
       if (res.ok) {
@@ -407,7 +427,7 @@ async function consultarIaA(env, title, body) {
           { role: "system", content: PROMPT_REVISAO },
           { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
         ],
-        max_tokens: 1200,
+        max_tokens: 1500,
       });
       if (res?.response) return res.response.trim();
     } catch {}
@@ -427,7 +447,7 @@ async function consultarIaB(env, title, body) {
         { role: "system", content: PROMPT_REVISAO },
         { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
       ],
-      max_tokens: 1200,
+      max_tokens: 1500,
     });
     if (res?.response) return res.response.trim();
   } catch {}
@@ -439,7 +459,7 @@ async function consultarIaB(env, title, body) {
         { role: "system", content: PROMPT_REVISAO },
         { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
       ],
-      max_tokens: 1200,
+      max_tokens: 1500,
     });
     if (res?.response) return res.response.trim();
   } catch {}
@@ -451,7 +471,7 @@ async function consultarIaB(env, title, body) {
         { role: "system", content: PROMPT_REVISAO },
         { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
       ],
-      max_tokens: 1200,
+      max_tokens: 1500,
     });
     if (res?.response) return res.response.trim();
   } catch {}
@@ -560,8 +580,8 @@ async function startBusca(env, chatId, termo, acao) {
 
   await env.KV.put(listKey(chatId), JSON.stringify({ paths, acao }), { expirationTtl: 3600 });
 
-  const rotulo = { editar: "editar", deletar: "apagar" }[acao] ?? "ler";
-  const emoji = { editar: "✏️", deletar: "🗑️" }[acao] ?? "🔎";
+  const rotulo = { editar: "editar", deletar: "apagar", analise: "analisar" }[acao] ?? "ler";
+  const emoji = { editar: "✏️", deletar: "🗑️", analise: "🧠" }[acao] ?? "🔎";
   await tg(env, "sendMessage", {
     chat_id: chatId,
     text: `${emoji} Qual ensaio você quer ${rotulo}? (${paths.length} encontrado${paths.length > 1 ? "s" : ""})`,
@@ -674,6 +694,26 @@ async function sendForReading(env, chatId, path) {
   }
   const link = env.SITE_URL ? `\n🔗 ${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slugFromPath(path)}/` : "";
   await sendContent(env, chatId, `🔎 ${path}${link}`, file.text);
+}
+
+async function runArticleAnalysis(env, chatId, path) {
+  let file;
+  try {
+    file = await getFile(env, path);
+  } catch (e) {
+    return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
+  }
+
+  const { data: fm, body } = parseFrontmatter(file.text);
+  const title = (fm && extractField(fm, "title")) || fileName(path);
+  const bodyText = (body && body.trim()) || file.text;
+
+  await send(env, chatId, `🧠 Analisando "${title}" com IA A e IA B... Aguarde alguns instantes.`);
+  try {
+    await enviarRelatoriosDuplos(env, chatId, title, bodyText);
+  } catch (e) {
+    return send(env, chatId, `⚠️ Não foi possível obter as análises da IA: ${e.message}`);
+  }
 }
 
 async function sendForEditing(env, chatId, path) {
