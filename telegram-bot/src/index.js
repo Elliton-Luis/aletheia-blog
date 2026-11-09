@@ -25,7 +25,8 @@ const AJUDA_IDLE = `📖 Ensaios:
 /ideias — lista e gerencia suas ideias salvas
 /rascunhos — retoma rascunho de escrita
 
-🛠️ Repositório:
+🛠️ Repositório & Deploy:
+/deploy — status do deploy da Vercel e confirmação
 /repo — status e últimos commits do GitHub
 /historico — histórico de versões de um ensaio
 /link — endereço do blog
@@ -182,7 +183,7 @@ async function handleUpdate(update, env) {
     return handleComandoIdeia(env, chatId, text.replace(/^\/ideia/, "").trim());
   }
   if (text === "/ideias") return listarIdeias(env, chatId);
-  if (text === "/repo" || text === "/status") return verStatusRepo(env, chatId);
+  if (text === "/repo" || text === "/status" || text === "/deploy") return verStatusRepo(env, chatId);
   if (text?.startsWith("/historico")) {
     const termo = text.replace("/historico", "").trim().toLowerCase();
     return startBusca(env, chatId, termo, "historico");
@@ -825,10 +826,11 @@ async function finalizeNewPost(env, chatId, title, markdown) {
   const path = `${env.CONTENT_PATH}/${String(number).padStart(4, "0")}.${slug}.md`;
 
   try {
-    await commitFile(env, path, markdown, `novo: ${fileName(path)}`);
+    const commitSha = await commitFile(env, path, markdown, `novo: ${fileName(path)}`);
     await env.KV.delete(sessionKey(chatId));
-    await send(env, chatId, `✅ Publicado em ${path}\nO deploy na Vercel deve começar em instantes.`);
-    await avisarLink(env, chatId, slug);
+    await env.KV.delete(`card:${slug}`).catch(() => {});
+    await send(env, chatId, `✅ Salvo no GitHub: ${path}\n${commitSha ? `Commit: \`${commitSha.slice(0, 7)}\`\n` : ""}Aguardando build da Vercel...`);
+    await avisarLink(env, chatId, slug, commitSha);
   } catch (e) {
     await send(env, chatId, `Erro ao publicar: ${e.message}`);
   }
@@ -1336,10 +1338,12 @@ async function commitEdit(env, chatId, session, novo, resumo = "") {
     return send(env, chatId, `⚠️ Não publiquei: faltou ${problemas.join(", ")} no frontmatter.`);
   }
   try {
-    await commitFile(env, session.path, novo, `revisão: ${fileName(session.path)}`, session.sha);
+    const commitSha = await commitFile(env, session.path, novo, `revisão: ${fileName(session.path)}`, session.sha);
     await env.KV.delete(sessionKey(chatId));
-    await send(env, chatId, `✅ ${session.path} atualizado${resumo ? ` (${resumo})` : ""}.\nO deploy na Vercel deve começar em instantes.`);
-    await avisarLink(env, chatId, slugFromPath(session.path));
+    const slug = slugFromPath(session.path);
+    await env.KV.delete(`card:${slug}`).catch(() => {});
+    await send(env, chatId, `✅ ${session.path} atualizado${resumo ? ` (${resumo})` : ""}.\n${commitSha ? `Commit: \`${commitSha.slice(0, 7)}\`\n` : ""}Aguardando build da Vercel...`);
+    await avisarLink(env, chatId, slug, commitSha);
   } catch (e) {
     await send(env, chatId, `Erro ao publicar: ${e.message}`);
   }
@@ -1511,7 +1515,7 @@ async function listarIdeias(env, chatId) {
 // =====================================================================
 
 async function verStatusRepo(env, chatId) {
-  await send(env, chatId, "⏳ Buscando informações do repositório no GitHub...");
+  await send(env, chatId, "⏳ Buscando informações do repositório e deploy na Vercel...");
   try {
     const [commitsRes, posts] = await Promise.all([
       fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/commits?sha=${env.GITHUB_BRANCH}&per_page=5`, { headers: ghHeaders(env) }),
@@ -1520,8 +1524,31 @@ async function verStatusRepo(env, chatId) {
 
     if (!commitsRes.ok) throw new Error(`GitHub API: ${commitsRes.status}`);
     const commits = await commitsRes.json();
+    const latestSha = commits[0]?.sha;
 
-    let msg = `📦 Repositório: ${env.GITHUB_REPO}\n🌿 Branch: \`${env.GITHUB_BRANCH}\` · 📚 ${posts.length} ensaios\n🔗 ${env.SITE_URL || "Site configurado"}\n\n📜 Últimos 5 Commits:\n`;
+    let vercelMsg = "⚪ Vercel Deploy: Não verificado";
+    if (latestSha) {
+      try {
+        const stRes = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/commits/${latestSha}/status`, { headers: ghHeaders(env) });
+        if (stRes.ok) {
+          const stData = await stRes.json();
+          const vercelSt = stData.statuses?.find((s) => s.context?.toLowerCase().includes("vercel"));
+          if (vercelSt) {
+            if (vercelSt.state === "success") {
+              vercelMsg = "🟢 Vercel Deploy: Concluído e no ar";
+            } else if (vercelSt.state === "pending") {
+              vercelMsg = "🟡 Vercel Deploy: Em andamento (construindo...)";
+            } else {
+              vercelMsg = `🔴 Vercel Deploy: Falhou (${vercelSt.description})`;
+            }
+          } else {
+            vercelMsg = `ℹ️ Status geral GitHub: ${stData.state || "desconhecido"}`;
+          }
+        }
+      } catch {}
+    }
+
+    let msg = `📦 Repositório: ${env.GITHUB_REPO}\n🌿 Branch: \`${env.GITHUB_BRANCH}\` · 📚 ${posts.length} ensaios\n${vercelMsg}\n🔗 ${env.SITE_URL || "Site configurado"}\n\n📜 Últimos 5 Commits:\n`;
     for (const c of commits) {
       const sha = c.sha.slice(0, 7);
       const title = c.commit.message.split("\n")[0].slice(0, 60);
@@ -1532,7 +1559,7 @@ async function verStatusRepo(env, chatId) {
         : "";
       msg += `\n• \`${sha}\` — ${title}\n  _${autor}${dataFormatada ? ` em ${dataFormatada}` : ""}_\n`;
     }
-    msg += `\n💡 Use /historico para ver os commits de um ensaio específico.`;
+    msg += `\n💡 O bot agora aguarda a confirmação real da Vercel antes de avisar que está no ar.`;
     return send(env, chatId, msg);
   } catch (e) {
     return send(env, chatId, `⚠️ Erro ao consultar repositório: ${e.message}`);
@@ -1924,12 +1951,16 @@ async function commitFile(env, path, markdown, message, sha) {
     throw new Error("provavelmente já existe um ensaio com esse nome. Use /editar para alterá-lo.");
   }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  const data = await res.json().catch(() => null);
+  return data?.commit?.sha || null;
 }
 
 async function deleteFile(env, path, sha, message) {
   const body = { message, sha, branch: env.GITHUB_BRANCH };
   const res = await fetch(ghUrl(env, path), { method: "DELETE", headers: ghHeaders(env), body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  const data = await res.json().catch(() => null);
+  return data?.commit?.sha || null;
 }
 
 // =====================================================================
@@ -2023,19 +2054,58 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Espera o deploy da Vercel e confirma de verdade: dá um tempo inicial e
-// depois tenta buscar a página algumas vezes, com timeout em cada tentativa.
-// Se nunca responder 200, avisa que não confirmou (pode ser só demora, ou
-// algo deu errado) em vez de mandar o link sem checar nada.
-// Só roda se SITE_URL estiver configurado.
-async function avisarLink(env, chatId, slug) {
+// Espera o deploy da Vercel e confirma de verdade:
+// 1. Se tivermos commitSha, monitora o status real da Vercel no GitHub a cada 10s.
+// 2. Invalida cache de card KV.
+// 3. Só manda "Está no ar" quando a Vercel responder "success".
+// 4. Se a Vercel falhar no build (ex.: erro de compilação/syntax), avisa imediatamente.
+async function avisarLink(env, chatId, slug, commitSha) {
   if (!env.SITE_URL) return;
-  const url = `${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slug}/`;
+  const baseUrl = `${env.SITE_URL.replace(/\/$/, "")}/ensaios/${slug}/`;
 
+  if (slug) {
+    await env.KV.delete(`card:${slug}`).catch(() => {});
+  }
+
+  if (commitSha) {
+    const statusUrl = `https://api.github.com/repos/${env.GITHUB_REPO}/commits/${commitSha}/status`;
+    const maxTentativas = 15; // até 2m30s
+    const intervaloMs = 10_000;
+
+    for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+      await delay(intervaloMs);
+      try {
+        const res = await fetch(statusUrl, { headers: ghHeaders(env) });
+        if (res.ok) {
+          const data = await res.json();
+          const vercelStatus = data.statuses?.find((s) => s.context?.toLowerCase().includes("vercel"));
+          if (vercelStatus) {
+            if (vercelStatus.state === "success") {
+              const urlComCacheBuster = `${baseUrl}?v=${Date.now()}`;
+              return send(
+                env,
+                chatId,
+                `🚀 *Deploy concluído na Vercel!*\nO ensaio já está atualizado no ar.\n\n🔗 ${baseUrl}\n\n📱 _Se o navegador móvel mostrar versão antiga em disco:_\n${urlComCacheBuster}`
+              );
+            }
+            if (vercelStatus.state === "failure" || vercelStatus.state === "error") {
+              return send(
+                env,
+                chatId,
+                `❌ *Falha no build da Vercel!*\nO ensaio foi salvo no GitHub, mas a Vercel não conseguiu compilar o site.\n\nDetalhes:\n${vercelStatus.target_url || vercelStatus.description}`
+              );
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+
+  // Fallback caso Vercel não reporte status ou não haja commitSha
   await delay(LINK_ESPERA_INICIAL);
   for (let tentativa = 1; tentativa <= LINK_TENTATIVAS; tentativa++) {
-    if (await urlNoAr(url, LINK_TIMEOUT)) {
-      return send(env, chatId, `🔗 Está no ar: ${url}`);
+    if (await urlNoAr(baseUrl, LINK_TIMEOUT)) {
+      return send(env, chatId, `🔗 Está no ar: ${baseUrl}`);
     }
     if (tentativa < LINK_TENTATIVAS) await delay(LINK_INTERVALO);
   }
@@ -2043,7 +2113,7 @@ async function avisarLink(env, chatId, slug) {
   await send(
     env,
     chatId,
-    `⚠️ Não consegui confirmar que ficou no ar: ${url}\nPode ser só demora do deploy — dá uma olhada manualmente daqui a pouco.`,
+    `⚠️ Não consegui confirmar o deploy automaticamente: ${baseUrl}\nVerifique em instantes com /repo ou /deploy.`
   );
 }
 
