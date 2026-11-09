@@ -5,6 +5,7 @@
   --ink: #292a23;
   --muted: #737366;
   --line: #d8cfbd;
+  --line-strong: #bfb59f;
   --accent: #80664a;
   --serif: "Literata Variable", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --sans: "Avenir Next", Avenir, "Segoe UI", sans-serif;
@@ -20,6 +21,7 @@
     --ink: #e7e2d5;
     --muted: #a8a998;
     --line: #3b433d;
+    --line-strong: #4f5850;
     --accent: #c2a47d;
   }
 }
@@ -31,6 +33,7 @@
   --ink: #e7e2d5;
   --muted: #a8a998;
   --line: #3b433d;
+  --line-strong: #4f5850;
   --accent: #c2a47d;
 }
 
@@ -656,13 +659,15 @@ h1 em { color: var(--muted); font-weight: 400; }
   background: var(--paper);
 }
 .antologia-action-btn.primary {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: var(--paper-raised);
+  color: var(--ink);
+  border: 1px solid var(--accent);
+  font-weight: 600;
 }
 .antologia-action-btn.primary:hover {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--paper);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* =====================================================================
@@ -850,13 +855,15 @@ h1 em { color: var(--muted); font-weight: 400; }
   transition: all .18s ease;
 }
 .export-pdf {
-  background: var(--accent);
-  color: #fff;
+  background: var(--paper-raised);
+  color: var(--ink);
   border: 1px solid var(--accent);
+  font-weight: 600;
 }
 .export-pdf:hover {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--paper);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .export-booklet {
   background: var(--paper);
