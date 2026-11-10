@@ -17,6 +17,7 @@ const AJUDA_IDLE = `📖 Ensaios:
 /listar — busca um ensaio só pra ler
 /analise — análise crítica com IA (IA A e IA B)
 /contrapor — debate socrático e objeções duras
+/fontes — busca fontes confiáveis para o ensaio
 /card — gera card editorial com citação e link
 /deletar — busca um ensaio pra agendar exclusão
 
@@ -43,10 +44,10 @@ function ajudaContextual(session) {
   }
   if (session.mode === "editando") {
     const blocoInfo = session.blocoAlvo ? `\n(Editando Bloco #${session.blocoAlvo})` : "";
-    return `Editando ${session.path}:${blocoInfo}\n/editar <id> — edita só um bloco específico\n/colar — cola mensagens até você mandar /end\n/reescrever — substitui todo o texto\n/revisar — análise editorial com IA\n/contrapor — debate socrático\n/sugerir — sugestões de títulos e descrição\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
+    return `Editando ${session.path}:${blocoInfo}\n/editar <id> — edita só um bloco específico\n/colar — cola mensagens até você mandar /end\n/reescrever — substitui todo o texto\n/revisar — análise editorial com IA\n/contrapor — debate socrático\n/fontes — busca fontes confiáveis para o fim\n/sugerir — sugestões de títulos e descrição\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
   }
   if (session.mode === "escrevendo") {
-    return `Escrevendo "${session.title}":\n/revisar — análise editorial com IA\n/contrapor — debate socrático e objeções\n/sugerir — sugestões de títulos e descrição\n/end — conclui para análise final e publicação\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
+    return `Escrevendo "${session.title}":\n/revisar — análise editorial com IA\n/contrapor — debate socrático e objeções\n/fontes — busca fontes confiáveis para o fim\n/sugerir — sugestões de títulos e descrição\n/end — conclui para análise final e publicação\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
   }
   // novo-escolha, cabecalho-*
   return `Criando um ensaio novo.\n/cancelar — desiste`;
@@ -181,6 +182,10 @@ async function handleUpdate(update, env) {
     const termo = text.replace("/sugerir", "").trim().toLowerCase();
     return startBusca(env, chatId, termo, "sugerir");
   }
+  if (text?.startsWith("/fontes") || text?.startsWith("/fonte")) {
+    const termo = text.replace(/^\/(fontes|fonte)/, "").trim().toLowerCase();
+    return startBusca(env, chatId, termo, "fontes");
+  }
   if (text?.startsWith("/card")) {
     const termo = text.replace("/card", "").trim().toLowerCase();
     return startBusca(env, chatId, termo, "card");
@@ -304,6 +309,7 @@ async function handleCallback(cq, env) {
     if (list.acao === "analise") return runArticleAnalysis(env, chatId, path);
     if (list.acao === "contrapor") return runArticleDebate(env, chatId, path);
     if (list.acao === "sugerir") return runArticleSuggestions(env, chatId, path);
+    if (list.acao === "fontes") return runArticleSources(env, chatId, path);
     if (list.acao === "card") return runGenerateCard(env, chatId, path);
     if (list.acao === "historico") return runArticleHistory(env, chatId, path);
     return sendForEditing(env, chatId, path);
@@ -415,6 +421,17 @@ async function handleEscrevendo(env, chatId, session, msg, text) {
       return send(env, chatId, "💡 Continue escrevendo ou mande /end para publicar.");
     } catch (e) {
       return send(env, chatId, `⚠️ Erro nas sugestões: ${e.message}`);
+    }
+  }
+
+  // Busca de fontes confiáveis sob demanda
+  if (text === "/fontes" || text === "/fonte") {
+    if (!session.body?.trim()) return send(env, chatId, "Escreva algo no ensaio antes de buscar fontes.");
+    try {
+      await enviarFontesConfiaveis(env, chatId, session.title, session.body);
+      return send(env, chatId, "💡 Pode copiar e colar as fontes ao fim do texto, ou mandar /end.");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro ao buscar fontes: ${e.message}`);
     }
   }
 
@@ -766,6 +783,77 @@ async function enviarSugestoesEditorial(env, chatId, title, body) {
   return send(env, chatId, `💡 Sugestões Editoriais:\n\n${resp}`);
 }
 
+// =====================================================================
+// Busca de Fontes Confiáveis
+// =====================================================================
+
+const PROMPT_FONTES = `Você é um curador e pesquisador bibliográfico do blog Aletheia.
+Com base no texto do ensaio fornecido (que é um ensaio de reflexão filosófica pessoal, sem pretensão acadêmica estrita), selecione de 3 a 5 fontes e referências de alta credibilidade para conferir solidez e respeitabilidade às teses e fatos abordados.
+
+Critérios estritos de seleção de fontes:
+1. Priorize fontes primárias ou de alto rigor: clássicos da filosofia, artigos enciclopédicos de referência (ex: Stanford Encyclopedia of Philosophy, Britannica), periódicos renomados, livros canônicos de referência, documentos históricos ou portais institucionais/acadêmicos conceituados (ex: SciELO, JSTOR, universidades).
+2. NUNCA cite blogs amadores, fóruns, redes sociais ou páginas de autopublicação.
+3. Não precisa cobrir tudo: selecione apenas as referências pontuais mais relevantes para fundamentar os conceitos-chave ou marcos históricos do texto.
+
+Estruture sua resposta estritamente no seguinte formato em Markdown (pronto para ser copiado ou adicionado ao fim do artigo):
+
+## Fontes e Leituras Recomendadas
+
+1. **[Autor / Instituição]** — *Título da Obra ou Artigo*. [Contexto em uma frase explicando como essa fonte fundamenta ou dialoga com o ensaio].
+2. ...
+
+Responda em português, com sobriedade e elegância bibliográfica.`;
+
+async function consultarFontesIa(env, title, body) {
+  if (env.NVIDIA_API_KEY) {
+    try {
+      const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "nvidia/llama-3.1-nemotron-70b-instruct",
+          messages: [
+            { role: "system", content: PROMPT_FONTES },
+            { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+          ],
+          temperature: 0.3,
+          max_tokens: 1000,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const texto = data.choices?.[0]?.message?.content?.trim();
+        if (texto) return texto;
+      }
+    } catch {}
+  }
+
+  if (env.AI) {
+    try {
+      const res = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [
+          { role: "system", content: PROMPT_FONTES },
+          { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+        ],
+        max_tokens: 1000,
+      });
+      if (res?.response) return res.response.trim();
+    } catch {}
+  }
+
+  return null;
+}
+
+async function enviarFontesConfiaveis(env, chatId, title, body) {
+  await send(env, chatId, "📚 Pesquisando fontes e referências confiáveis...");
+  const fontes = await consultarFontesIa(env, title, body);
+  if (!fontes) throw new Error("Não foi possível gerar fontes confiáveis no momento.");
+  return send(env, chatId, `📚 *Fontes Confiáveis Sugeridas:*\n\n${fontes}`);
+}
+
 async function extrairFraseMarcante(env, title, body) {
   if (env.AI) {
     try {
@@ -1059,6 +1147,26 @@ async function runArticleSuggestions(env, chatId, path) {
     await enviarSugestoesEditorial(env, chatId, title, bodyText);
   } catch (e) {
     return send(env, chatId, `⚠️ Não foi possível obter as sugestões: ${e.message}`);
+  }
+}
+
+async function runArticleSources(env, chatId, path) {
+  let file;
+  try {
+    file = await getFile(env, path);
+  } catch (e) {
+    return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
+  }
+
+  const { data: fm, body } = parseFrontmatter(file.text);
+  const title = (fm && extractField(fm, "title")) || fileName(path);
+  const bodyText = (body && body.trim()) || file.text;
+
+  await send(env, chatId, `📚 Pesquisando fontes confiáveis para "${title}"...`);
+  try {
+    await enviarFontesConfiaveis(env, chatId, title, bodyText);
+  } catch (e) {
+    return send(env, chatId, `⚠️ Não foi possível obter fontes: ${e.message}`);
   }
 }
 
@@ -1415,6 +1523,19 @@ async function handleEditando(env, chatId, session, msg, text) {
       return send(env, chatId, "💡 Use /colar ou /reescrever quando quiser salvar as alterações.");
     } catch (e) {
       return send(env, chatId, `⚠️ Erro nas sugestões: ${e.message}`);
+    }
+  }
+
+  // Busca de fontes confiáveis sob demanda durante a edição
+  if (text === "/fontes" || text === "/fonte") {
+    const alvo = session.pendente ?? session.original;
+    const { data: fm, body } = parseFrontmatter(alvo);
+    const titulo = fm ? extractField(fm, "title") : fileName(session.path);
+    try {
+      await enviarFontesConfiaveis(env, chatId, titulo || "Ensaio", body || alvo);
+      return send(env, chatId, "💡 Agora use /colar (para acrescentar ao fim) ou /reescrever.");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro ao buscar fontes: ${e.message}`);
     }
   }
 
