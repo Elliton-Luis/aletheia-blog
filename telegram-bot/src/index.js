@@ -42,7 +42,8 @@ function ajudaContextual(session) {
     return `Ensaio aguardando confirmação:\n/publicar — publica no blog\n/cancelar — desiste\nOu mande uma mensagem (texto/áudio) para continuar editando.`;
   }
   if (session.mode === "editando") {
-    return `Editando ${session.path}:\n/reescrever — substitui tudo\n/colar — acrescenta no fim\n/revisar — análise editorial com IA\n/contrapor — debate socrático\n/sugerir — sugestões de títulos e descrição\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
+    const blocoInfo = session.blocoAlvo ? `\n(Editando Bloco #${session.blocoAlvo})` : "";
+    return `Editando ${session.path}:${blocoInfo}\n/editar <id> — edita só um bloco específico\n/colar — cola mensagens até você mandar /end\n/reescrever — substitui todo o texto\n/revisar — análise editorial com IA\n/contrapor — debate socrático\n/sugerir — sugestões de títulos e descrição\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
   }
   if (session.mode === "escrevendo") {
     return `Escrevendo "${session.title}":\n/revisar — análise editorial com IA\n/contrapor — debate socrático e objeções\n/sugerir — sugestões de títulos e descrição\n/end — conclui para análise final e publicação\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
@@ -157,7 +158,12 @@ async function handleUpdate(update, env) {
   }
   if (text === "/criar") return startCriar(env, chatId);
   if (text?.startsWith("/editar")) {
-    return startBusca(env, chatId, text.replace("/editar", "").trim().toLowerCase(), "editar");
+    const param = text.replace("/editar", "").trim();
+    // Se o usuário já está editando um arquivo e enviou "/editar <id>" (ou "/editar <id> <texto>")
+    if (session?.mode === "editando" && /^\d+(\s+[\s\S]*)?$/.test(param)) {
+      return handleEditando(env, chatId, session, msg, text);
+    }
+    return startBusca(env, chatId, param.toLowerCase(), "editar");
   }
   if (text?.startsWith("/listar") || text?.startsWith("/lista")) {
     const termo = text.replace(/^\/(listar|lista)/, "").trim().toLowerCase();
@@ -479,13 +485,17 @@ Contexto e manifesto fundamental do autor:
 Diretrizes essenciais:
 1. Avaliação com Nota (0 a 10): Atribua uma nota de 0 a 10 avaliando o POTENCIAL do tema em relação ao CAMINHO e à EXECUÇÃO do artigo (ex.: tema excelente com boa execução; tema com grande potencial mas em desenvolvimento/"indo"; tema promissor mas mal direcionado; ou tema modesto mas com execução primorosa). Explique a nota em poucas linhas.
 2. Destaque obrigatoriamente e de forma SEPARADA o "Ponto Forte" e o "Ponto Mais Fraco" do ensaio.
-3. O foco prioritário deve ser o exercício do pensamento, a consistência reflexiva e as conexões conceituais (pensamento em processo).
-4. Pode e deve mencionar pontuação e aspectos formais do texto, mas estritamente como a ÚLTIMA prioridade da análise.
+3. Síntese Filosófica das Ideias Centrais: sintetize de forma completa e estruturada todas as teses, conexões conceituais e o fio condutor do pensamento do autor (sem ficar artificialmente preso a 3 ou 4 linhas; capture a densidade real dos argumentos de ponta a ponta).
+4. O foco prioritário deve ser o exercício do pensamento, a consistência reflexiva e as conexões conceituais (pensamento em processo).
+5. Pode e deve mencionar pontuação e aspectos formais do texto, mas estritamente como a ÚLTIMA prioridade da análise.
 
 Estruture sua resposta obrigatoriamente no seguinte formato conciso (use emojis):
 
 🎯 Avaliação: [Nota de 0 a 10]/10
 (Diagnóstico conciso sobre a relação entre o potencial do tema e o caminho/execução do texto)
+
+📖 Síntese das Principais Ideias
+(Resumo substancial e fiel das teses centrais, encadeamento lógico e argumentos do ensaio, detalhando o raciocínio sem reducionismo)
 
 🟢 Ponto Forte
 (O aspecto mais potente da reflexão, tese ou argumento)
@@ -1137,28 +1147,42 @@ async function sendForEditing(env, chatId, path) {
     return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
   }
 
+  const { data: fm, body } = parseFrontmatter(file.text);
+  const blocks = splitTextIntoBlocks(file.text, LIMITE_TEXTO);
+
   // O sha identifica a versão exata que você baixou (evita sobrescrever uma
   // edição feita pelo PC enquanto você editava pelo celular).
-  await saveSession(env, chatId, { mode: "editando", path, sha: file.sha, original: file.text });
+  await saveSession(env, chatId, {
+    mode: "editando",
+    path,
+    sha: file.sha,
+    original: file.text,
+    blocos: blocks,
+  });
 
   // 1ª Mensagem: Explicação clara dos comandos disponíveis
   await send(
     env,
     chatId,
-    `✏️ Editando: ${fileName(path)}\n\n📌 Comandos disponíveis:\n• /reescrever — substitui todo o texto\n• /colar — acrescenta no fim\n• /pin — liga/desliga destaque fixado\n• /tag nome — adiciona ou remove tag\n• /cancelar — cancela e descarta alterações\n\nAbaixo envio o texto atual do ensaio:`
+    `✏️ Editando: ${fileName(path)}\n\n📌 Comandos disponíveis:\n• /editar <id> — edita apenas um bloco específico (ex: /editar 1)\n• /colar — acrescenta no fim (acumula mensagens até /end)\n• /reescrever — substitui todo o texto\n• /pin — liga/desliga destaque fixado\n• /tag nome — adiciona ou remove tag\n• /cancelar — cancela e descarta alterações\n\nAbaixo envio o texto atual do ensaio dividido em blocos identificados:`
   );
 
-  // 2ª Mensagem (e seguintes): O texto em si, separado em blocos antes dos cabeçalhos ##
-  const blocks = splitTextIntoBlocks(file.text, LIMITE_TEXTO);
+  // 2ª Mensagem (e seguintes): O texto em si, com ID visível para edição pontual
   for (let i = 0; i < blocks.length; i++) {
-    const prefix = blocks.length > 1 ? `📄 [Parte ${i + 1}/${blocks.length}]\n\n` : "";
-    await send(env, chatId, `${prefix}${blocks[i]}`);
+    const headerBloco = `🧩 [Bloco ${i + 1}/${blocks.length}]`;
+    await send(env, chatId, `${headerBloco}\n\n${blocks[i]}`);
   }
 }
 
 function extrairCorpo(raw) {
   const { data: fm, body } = parseFrontmatter(raw);
   return (fm ? body : raw).trim();
+}
+
+function montarTextoComBlocoEditado(original, blocos, blocoIdx, novoTextoBloco) {
+  const novosBlocos = [...blocos];
+  novosBlocos[blocoIdx] = novoTextoBloco.trim();
+  return novosBlocos.join("\n\n");
 }
 
 function montarTextoEditado(original, novoConteudo, modo) {
@@ -1193,23 +1217,141 @@ function montarTextoEditado(original, novoConteudo, modo) {
 }
 
 async function handleEditando(env, chatId, session, msg, text) {
-  // 1. Suporte a comando direto: "/colar <texto opcional>" ou "/colar" puro
-  const ehColarComando = text === "/colar" || text?.startsWith("/colar ");
-  const ehReescreverComando = text === "/reescrever" || text?.startsWith("/reescrever ");
-  const ehEnd = text === "/end";
+  const blocos = session.blocos || splitTextIntoBlocks(session.original, LIMITE_TEXTO);
 
-  if (ehColarComando || (ehEnd && session.pendente)) {
-    const textoParaColar = text?.startsWith("/colar ")
-      ? text.replace(/^\/colar\s+/, "").trim()
-      : session.pendente;
+  // Comando /editar <id> [novoTexto]
+  if (text?.startsWith("/editar")) {
+    const param = text.replace(/^\/editar\s*/, "").trim();
+    const match = param.match(/^(\d+)(?:\s+([\s\S]+))?$/);
+    if (match) {
+      const numBloco = Number(match[1]);
+      const textoInline = match[2]?.trim();
+      if (numBloco < 1 || numBloco > blocos.length) {
+        return send(env, chatId, `⚠️ Bloco inválido. Escolha um bloco de 1 a ${blocos.length}.`);
+      }
 
-    if (!textoParaColar?.trim()) {
-      return send(env, chatId, "Mande o conteúdo que deseja acrescentar (texto, áudio ou arquivo), ou envie `/colar seu texto aqui`.");
+      if (textoInline) {
+        const novoTexto = montarTextoComBlocoEditado(session.original, blocos, numBloco - 1, textoInline);
+        return commitEdit(env, chatId, session, novoTexto, `bloco ${numBloco} alterado`);
+      }
+
+      await saveSession(env, chatId, {
+        ...session,
+        blocos,
+        blocoAlvo: numBloco,
+        acumulandoBloco: true,
+        bufferBloco: "",
+      });
+      return send(
+        env,
+        chatId,
+        `🧩 Editando Bloco ${numBloco}/${blocos.length}.\n\nTexto atual:\n---\n${blocos[numBloco - 1]}\n---\n\nEnvie o novo texto (ou áudios). Pode mandar várias mensagens; quando terminar, mande /end para aplicar.`
+      );
+    }
+  }
+
+  // Se estiver acumulando edição de um bloco específico
+  if (session.acumulandoBloco && session.blocoAlvo) {
+    const audioId = getAudioFileId(msg);
+    let conteudo = text || "";
+    if (audioId) {
+      await send(env, chatId, "🎙️ Transcrevendo áudio para o bloco...");
+      try {
+        conteudo = await transcreverAudio(env, audioId);
+      } catch (e) {
+        return send(env, chatId, `⚠️ Erro ao transcrever áudio: ${e.message}`);
+      }
+    } else if (msg.document) {
+      conteudo = normalize(await downloadFile(env, msg.document.file_id));
     }
 
-    const novo = montarTextoEditado(session.original, textoParaColar, "colar");
+    const fimNoFinal = conteudo.match(/\/end\s*$/);
+    const ehFim = conteudo === "/end" || Boolean(fimNoFinal);
+    const pedaco = conteudo === "/end" ? "" : fimNoFinal ? conteudo.slice(0, fimNoFinal.index).trim() : conteudo;
+
+    let bufferAtual = session.bufferBloco || "";
+    if (pedaco) {
+      bufferAtual = bufferAtual ? `${bufferAtual}\n\n${pedaco}` : pedaco;
+    }
+
+    if (!ehFim) {
+      await saveSession(env, chatId, { ...session, bufferBloco: bufferAtual });
+      return; // Acumula em silêncio
+    }
+
+    if (!bufferAtual.trim()) {
+      return send(env, chatId, "Nenhum texto foi informado para o bloco. Envie o novo texto antes de /end, ou /cancelar.");
+    }
+
+    const novoTexto = montarTextoComBlocoEditado(session.original, blocos, session.blocoAlvo - 1, bufferAtual);
+    return commitEdit(env, chatId, session, novoTexto, `bloco ${session.blocoAlvo} alterado`);
+  }
+
+  // Comando /colar
+  const ehColarComando = text === "/colar" || text?.startsWith("/colar ");
+  if (ehColarComando) {
+    const textoInline = text?.startsWith("/colar ") ? text.replace(/^\/colar\s+/, "").trim() : "";
+    await saveSession(env, chatId, {
+      ...session,
+      blocos,
+      acumulandoColar: true,
+      colarBuffer: textoInline,
+    });
+
+    if (textoInline) {
+      return send(
+        env,
+        chatId,
+        `📥 Modo colar ativado com texto inicial. Continue enviando mensagens e termine com /end para acrescentar ao fim do ensaio.`
+      );
+    }
+    return send(
+      env,
+      chatId,
+      "📥 Modo colar ativado. Mande todo o conteúdo que deseja acrescentar (quantas mensagens ou áudios quiser). Quando terminar, mande /end para aplicar no fim do ensaio."
+    );
+  }
+
+  // Se estiver acumulando colar
+  if (session.acumulandoColar) {
+    const audioId = getAudioFileId(msg);
+    let conteudo = text || "";
+    if (audioId) {
+      await send(env, chatId, "🎙️ Transcrevendo áudio...");
+      try {
+        conteudo = await transcreverAudio(env, audioId);
+      } catch (e) {
+        return send(env, chatId, `⚠️ Erro ao transcrever áudio: ${e.message}`);
+      }
+    } else if (msg.document) {
+      conteudo = normalize(await downloadFile(env, msg.document.file_id));
+    }
+
+    const fimNoFinal = conteudo.match(/\/end\s*$/);
+    const ehFim = conteudo === "/end" || Boolean(fimNoFinal);
+    const pedaco = conteudo === "/end" ? "" : fimNoFinal ? conteudo.slice(0, fimNoFinal.index).trim() : conteudo;
+
+    let bufferAtual = session.colarBuffer || "";
+    if (pedaco) {
+      bufferAtual = bufferAtual ? `${bufferAtual}\n\n${pedaco}` : pedaco;
+    }
+
+    if (!ehFim) {
+      await saveSession(env, chatId, { ...session, colarBuffer: bufferAtual });
+      return; // Acumula em silêncio
+    }
+
+    if (!bufferAtual.trim()) {
+      return send(env, chatId, "Nenhum texto foi acumulado. Envie o texto antes de /end, ou /cancelar.");
+    }
+
+    const novo = montarTextoEditado(session.original, bufferAtual, "colar");
     return commitEdit(env, chatId, session, novo, "conteúdo adicionado ao fim");
   }
+
+  // Comando /reescrever
+  const ehReescreverComando = text === "/reescrever" || text?.startsWith("/reescrever ");
+  const ehEnd = text === "/end";
 
   if (ehReescreverComando) {
     const textoParaReescrever = text?.startsWith("/reescrever ")
@@ -1222,6 +1364,11 @@ async function handleEditando(env, chatId, session, msg, text) {
 
     const novo = montarTextoEditado(session.original, textoParaReescrever, "reescrever");
     return commitEdit(env, chatId, session, novo, "conteúdo reescrito");
+  }
+
+  if (ehEnd && session.pendente) {
+    const novo = montarTextoEditado(session.original, session.pendente, "colar");
+    return commitEdit(env, chatId, session, novo, "conteúdo adicionado ao fim");
   }
 
   if (ehEnd && !session.pendente) {
