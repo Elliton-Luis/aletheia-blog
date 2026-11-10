@@ -27,6 +27,16 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         etymology: 'Do grego krinein (discernir, separar, julgar).',
         meaning: 'A habilidade primordial do pensamento de discriminar o verdadeiro do aparente, perdida quando nos contentamos com resultados prontos.',
       },
+      {
+        term: 'Prompt',
+        etymology: 'Do latim promptus (visível, manifesto, pronto a agir, particípio de promere, trazer à luz).',
+        meaning: 'Comando ou instrução textual fornecida como ponto de partida a um modelo computacional de linguagem.',
+      },
+      {
+        term: 'Go horse',
+        etymology: 'Expressão idiomática do jargão técnico contemporâneo (eXtreme Go Horse, XGH).',
+        meaning: 'Metodologia informal ou caótica de execução direta sem planejamento prévio nem rigor analítico, feita na força bruta.',
+      },
     ],
   },
   'sorte-sucesso-e-injustica': {
@@ -44,6 +54,11 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         etymology: 'Do latim ignorare (não conhecer, desconhecer).',
         meaning: 'O estado de privação do saber, problematizado pelo autor entre a carência involuntária de oportunidade e a conivência social.',
       },
+      {
+        term: 'Estupidez',
+        etymology: 'Do latim stupiditas, derivado de stupere (ficar atônito, paralisado, entorpecido).',
+        meaning: 'Entorpecimento intelectual ou insensibilidade ao discernimento cultivada por estímulos rasos.',
+      },
     ],
   },
   'verdade-e-mentira-social': {
@@ -60,6 +75,16 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         term: 'Aletheia',
         etymology: 'Do grego a-letheia (o desvelamento, o não-esquecimento).',
         meaning: 'A verdade concebida como revelação límpida do real, em oposição direta ao encobrimento e à manipulação intencional.',
+      },
+      {
+        term: 'Soft skill',
+        etymology: 'Do inglês soft (suave, maleável) + skill (habilidade, destreza; do nórdico antigo skil, discernimento).',
+        meaning: 'Habilidade comportamental e relacional, usada socialmente muitas vezes como eufemismo para polidez ou conveniência.',
+      },
+      {
+        term: 'Intrínseco',
+        etymology: 'Do latim intrinsecus (interiormente, de dentro para dentro).',
+        meaning: 'Aquilo que pertence à essência e à própria natureza da coisa, independente de fatores exteriores.',
       },
     ],
   },
@@ -83,6 +108,36 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         etymology: 'Do grego τέχνη (arte, ofício, habilidade técnica).',
         meaning: 'A aplicação prática e metódica do conhecimento, raiz da ideia de arte enquanto técnica que capacita e liberta.',
       },
+      {
+        term: 'Philosophia',
+        etymology: 'Do grego philos (amigo, amante) + sophia (sabedoria, discernimento superior).',
+        meaning: 'O amor apaixonado pela investigação desinteressada da verdade e das causas primeiras.',
+      },
+      {
+        term: 'Theologia',
+        etymology: 'Do grego theos (Deus) + logos (razão, estudo, verbo).',
+        meaning: 'A reflexão racional e sistemática sobre a natureza divina e a relação do Criador com a existência.',
+      },
+      {
+        term: 'Dialética',
+        etymology: 'Do grego dialektike (arte do diálogo, debate racional de teses).',
+        meaning: 'Método de argumentação lógica que confronta proposições contraditórias para alcançar síntese superior.',
+      },
+      {
+        term: 'Retórica',
+        etymology: 'Do grego rhetorike (arte da oratória persuasiva).',
+        meaning: 'A técnica de estruturar e enunciar o discurso para convencer e transmitir a verdade com clareza.',
+      },
+      {
+        term: 'Petição de princípio',
+        etymology: 'Do latim petitio principii (tradução do grego de Aristóteles to en archei aiteisthai).',
+        meaning: 'Falácia lógica em que a premissa que se quer demonstrar já é assumida como verdadeira na partida.',
+      },
+      {
+        term: 'Metafísica',
+        etymology: 'Do grego meta ta physika (além das coisas físicas/naturais).',
+        meaning: 'A investigação ontológica fundamental dos princípios que transcendem a matéria e o mundo sensível.',
+      },
     ],
   },
   'suicidio': {
@@ -105,6 +160,31 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         etymology: 'Do grego episteme (conhecimento certo, ciência) + logos (estudo).',
         meaning: 'A disciplina filosófica que investiga como cognoscemos e distinguimos a verdade objetiva da mera percepção subjetiva.',
       },
+      {
+        term: 'Ontologia',
+        etymology: 'Do grego ontos (o ser que é) + logos (razão, tratado).',
+        meaning: 'O ramo fundamental da filosofia que indaga o estatuto real do ser enquanto ser.',
+      },
+      {
+        term: 'Demiurgo',
+        etymology: 'Do grego demiourgos (artesão público, criador; demos, povo + ergon, obra).',
+        meaning: 'O princípio ordenador do cosmos material na filosofia platônica, usado no ensaio como figura de validação exterior.',
+      },
+      {
+        term: 'Cognoscer',
+        etymology: 'Do latim cognoscere (vir a conhecer perfeitamente, discernir).',
+        meaning: 'Apreender pelo intelecto a realidade das coisas além das impressões empíricas imediatas.',
+      },
+      {
+        term: 'Efêmero',
+        etymology: 'Do grego ephemeros (que dura apenas um dia; epi, sobre + hemera, dia).',
+        meaning: 'Aquilo que é transitório, passageiro e desprovido de permanência temporal.',
+      },
+      {
+        term: 'Prospectivo',
+        etymology: 'Do latim prospicere (olhar adiante, antever).',
+        meaning: 'Aquilo que se refere ao devir ou futuro potencial que a consciência pode vir a concretizar.',
+      },
     ],
   },
   'o-valor-da-etimologia': {
@@ -122,6 +202,16 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         etymology: 'Do grego morphe (forma) + logos (estudo).',
         meaning: 'O estudo das formas estruturais dos vocábulos, distinguindo a arquitetura gramatical do conteúdo etimológico histórico.',
       },
+      {
+        term: 'Tchau',
+        etymology: 'Do dialeto vêneto s-ciavo (escravo vosso, submisso às vossas ordens, do latim medieval sclavus).',
+        meaning: 'Saudação de despedida que nasceu como reverência cortês de servidão voluntária e respeito mútuo.',
+      },
+      {
+        term: 'Ad Deum',
+        etymology: 'Locução latina clássica formada pela preposição ad (a, em direção a) + acusativo Deum (Deus).',
+        meaning: 'Recomendação final a Deus ao se despedir, raiz exata da palavra "adeus".',
+      },
     ],
   },
   'sobre-o-sincretismo': {
@@ -138,6 +228,11 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         term: 'Dogma',
         etymology: 'Do grego dokein (parecer, crer firmemente).',
         meaning: 'Princípio aceito como verdade basilar que não admite contemporização ou fusão arbitrária sem descaracterizar sua fé.',
+      },
+      {
+        term: 'Antropológico',
+        etymology: 'Do grego anthropos (homem, ser humano) + logos (estudo, reflexão).',
+        meaning: 'Perspectiva descritiva focada nos costumes, manifestações e fenômenos sociais produzidos pela humanidade.',
       },
     ],
   },
@@ -173,6 +268,16 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         etymology: 'Do grego ethos (morada, costume arraigado).',
         meaning: 'O conjunto de costumes e princípios que orientam o agir humano, ameaçado pela erosão sutil das concessões banais.',
       },
+      {
+        term: 'Ambíguo',
+        etymology: 'Do latim ambiguus (que oscila entre duas direções, incerto; ambigere, mover-se em torno).',
+        meaning: 'Ato ou enunciado que comporta dupla interpretação ou julgamento moral incerto.',
+      },
+      {
+        term: 'K9',
+        etymology: 'Designação moderna derivada de cannabinoid synthetic receptor agonists (família canabinóide sintética).',
+        meaning: 'Droga sintética de alta potência neurotóxica utilizada como metáfora do extremo perigoso de degradação.',
+      },
     ],
   },
   'a-cultura-do-vitimismo-e-a-mentira-necessidade': {
@@ -194,6 +299,36 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
         term: 'Cabresto',
         etymology: 'Do latim capistrum (arreio, cabeçada para animais).',
         meaning: 'A metáfora do eleitor tutelado e subjugado por coação física ou econômica durante a República Velha.',
+      },
+      {
+        term: 'Carta Magna',
+        etymology: 'Do latim carta (papel, decreto) + magna (grande, soberana).',
+        meaning: 'A lei fundamental e suprema de um país que rege e limita todos os poderes instituídos; Constituição.',
+      },
+      {
+        term: 'Queremismo',
+        etymology: 'Neologismo político brasileiro derivado da palavra de ordem popular "Queremos Getúlio" (1945).',
+        meaning: 'Movimento popular e caudilhista que reivindicava a continuidade autoritária de Getúlio Vargas no poder.',
+      },
+      {
+        term: 'Pluripartidarismo',
+        etymology: 'Do latim plures (vários, múltiplos) + pars (parte, facção política).',
+        meaning: 'Regime democrático caracterizado pela livre existência e atuação de múltiplos partidos políticos.',
+      },
+      {
+        term: 'Derrama',
+        etymology: 'Do verbo derramar (espalhar amplamente; no sentido fiscal, cobrar cota forçada de tributos).',
+        meaning: 'Cobrança compulsória e violenta de impostos atrasados sobre o ouro imposta pela Coroa Portuguesa em Minas Gerais.',
+      },
+      {
+        term: 'Inconfidência',
+        etymology: 'Do latim in- (negação) + confidentia (fidelidade, confiança recíproca com a Coroa).',
+        meaning: 'Acusação de deslealdade política ou conspiração contra o monarca reinante.',
+      },
+      {
+        term: 'Bode expiatório',
+        etymology: 'Do hebraico Azazel (rito bíblico do Levítico) e do latim expiare (purificar com sacrifício).',
+        meaning: 'Indivíduo ou grupo que suporta injustamente a punição e culpa pelas faltas alheias para preservar os mandatários.',
       },
     ],
   },
