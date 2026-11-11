@@ -1290,7 +1290,24 @@ function extrairCorpo(raw) {
 }
 
 function montarTextoComBlocoEditado(original, blocos, blocoIdx, novoTextoBloco) {
+  const { data: fmOriginal } = parseFrontmatter(original);
   const novosBlocos = [...blocos];
+
+  if (blocoIdx === 0) {
+    const { data: fmNovo } = parseFrontmatter(novoTextoBloco);
+    if (!fmNovo && fmOriginal) {
+      const header = {
+        title: extractField(fmOriginal, "title"),
+        date: extractField(fmOriginal, "date"),
+        description: extractField(fmOriginal, "description"),
+        tags: extractTags(fmOriginal),
+        pinned: extractPinned(fmOriginal),
+      };
+      novosBlocos[0] = buildMarkdown(header, novoTextoBloco.trim());
+      return novosBlocos.join("\n\n");
+    }
+  }
+
   novosBlocos[blocoIdx] = novoTextoBloco.trim();
   return novosBlocos.join("\n\n");
 }
