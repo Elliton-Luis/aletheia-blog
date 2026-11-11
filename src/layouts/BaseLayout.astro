@@ -14,6 +14,22 @@ interface Props {
 
 const { title, description = 'Um espaço pessoal para registrar ideias, leituras e descobertas.', wide = false, showPrint = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+
+const buildDate = new Date();
+const lastUpdatedDate = new Intl.DateTimeFormat('pt-BR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'America/Sao_Paulo',
+}).format(buildDate);
+
+const lastUpdatedTime = new Intl.DateTimeFormat('pt-BR', {
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'America/Sao_Paulo',
+}).format(buildDate);
+
+const lastUpdatedFormatted = `${lastUpdatedDate} às ${lastUpdatedTime}`;
 ---
 
 <!doctype html>
@@ -85,6 +101,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       </div>
       <div class="footer-bottom">
         <span class="footer-credit">© O Eleito</span>
+        <span class="footer-separator" aria-hidden="true">·</span>
+        <span class="footer-updated">Atualizado pela última vez em <time datetime={buildDate.toISOString()}>{lastUpdatedFormatted}</time></span>
       </div>
     </footer>
     <script>

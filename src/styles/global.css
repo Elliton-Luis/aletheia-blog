@@ -278,8 +278,10 @@ h1 em { color: var(--muted); font-weight: 400; }
 .footer-inner { width: min(50vw, 56rem); margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--muted); font-size: .88rem; }
 .footer-tagline { font-family: var(--serif); font-style: italic; }
 .contact-email { overflow-wrap: anywhere; }
-.footer-bottom { width: min(50vw, 56rem); margin-inline: auto; margin-top: 1.2rem; padding-block: .9rem 1.6rem; border-top: 1px solid color-mix(in srgb, var(--line) 40%, transparent); text-align: center; }
+.footer-bottom { width: min(50vw, 56rem); margin-inline: auto; margin-top: 1.2rem; padding-block: .9rem 1.6rem; border-top: 1px solid color-mix(in srgb, var(--line) 40%, transparent); text-align: center; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .3rem .6rem; }
 .footer-credit { display: inline-block; color: var(--muted); font-size: .78rem; letter-spacing: .08em; font-variant: small-caps; }
+.footer-separator { color: var(--line); font-size: .78rem; }
+.footer-updated { display: inline-block; color: var(--muted); font-size: .78rem; letter-spacing: .02em; }
 .about-contact { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
 .about-contact .eyebrow { margin-bottom: .4rem; }
 .about-contact a { color: var(--accent); text-decoration: none; }
