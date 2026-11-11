@@ -332,4 +332,41 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
       },
     ],
   },
+  'como-a-busca-de-deus-e-o-principal-desejo-humano': {
+    gravitas: 'gravis',
+    aphorismus: 'O humano saiu das marcas de sangue para as marcas da alma.',
+    resumo: 'O ensaio investiga a busca humana pelo divino ao longo da história, desde as primeiras manifestações simbólicas e ritos funerários na pré-história até a cosmologia dos pré-socráticos com a noção de arché. Conecta essa trajetória à encarnação do Logos joanino e à teologia patrística de Clemente de Alexandria em Stromata, defendendo que a própria razão e a reflexão filosófica constituem um caminho pedagógico que prepara a alma para o encontro com Deus.',
+    scholia: [
+      {
+        term: 'Arché',
+        etymology: 'Do grego ἀρχή (início, princípio ordenador, governo; do verbo árchō).',
+        meaning: 'O princípio primordial e causa primeira de todas as coisas investigado pelos filósofos pré-socráticos, que ao mesmo tempo origina e rege o cosmos.',
+      },
+      {
+        term: 'Logos',
+        etymology: 'Do grego λόγος (palavra, verbo, razão cósmica; derivado de légein, reunir, falar).',
+        meaning: 'A Razão ordenadora do universo que na teologia joanina da Vulgata Latina (Verbum) se faz carne e habita entre os homens.',
+      },
+      {
+        term: 'Anacronismo',
+        etymology: 'Do grego ἀνά (para trás, contra) + χρόνος (tempo).',
+        meaning: 'O vício de projetar conceitos, categorias ou compreensões posteriores sobre épocas e autores do passado.',
+      },
+      {
+        term: 'Stromata',
+        etymology: 'Do grego στρώματα (tapeçarias, mantas bordadas, miscelâneas).',
+        meaning: 'Título da célebre obra de Tito Flávio Clemente (Clemente de Alexandria), reunindo reflexões sobre fé, cultura grega e filosofia.',
+      },
+      {
+        term: 'Micênico',
+        etymology: 'Referente a Micenas (cidade da Grécia Antiga) e à civilização helênica do final da Idade do Bronze.',
+        meaning: 'Período anterior à filosofia socrática no qual a busca por sentido se expressava no politeísmo mítico das forças naturais.',
+      },
+      {
+        term: 'Baal',
+        etymology: 'Do semítico ba\'al (senhor, mestre, possuidor).',
+        meaning: 'Divindade cananeia da fertilidade e tempestades, símbolo bíblico recorrente das tentações de idolatria que afastavam o povo de Israel do culto reto ao Deus verdadeiro.',
+      },
+    ],
+  },
 };

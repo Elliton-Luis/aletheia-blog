@@ -799,6 +799,8 @@ Estruture sua resposta estritamente no seguinte formato em Markdown (pronto para
 
 ## Fontes e Leituras Recomendadas
 
+_Fontes obtidas através de inteligência artificial no escaneamento do tema._
+
 1. **[Autor / Instituição]** — *Título da Obra ou Artigo*. [Contexto em uma frase explicando como essa fonte fundamenta ou dialoga com o ensaio].
 2. ...
 
@@ -1883,6 +1885,7 @@ const CURATED_HOOKS = {
   "a-cultura-do-vitimismo-e-a-mentira-necessidade": "A mentira repetida por necessidade de consolo aprisiona o espírito.",
   "dificultar-para-aprender": "A facilidade excessiva é a anestesia do intelecto.",
   "nunca-devemos-praticar-algo-que-e-possivelmente-mal": "A dúvida moral honesta nos obriga a recuar antes de agir.",
+  "como-a-busca-de-deus-e-o-principal-desejo-humano": "O humano saiu das marcas de sangue para as marcas da alma.",
 };
 
 function buildCardSvg({ title, quote, link }) {
