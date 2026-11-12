@@ -15,7 +15,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'filosofar-na-era-da-ia': {
     gravitas: 'modicus',
     aphorismus: 'É importante pensar, mesmo estando errado.',
-    resumo: 'O ensaio investiga a comodidade de delegar tarefas cognitivas à inteligência artificial e a consequente perda de profundidade crítica. Defende que o valor de estudar e pensar não reside apenas no acerto mecânico, mas na atividade mesma do raciocínio que impede a atrofia do intelecto.',
+    resumo: 'O ensaio enfrenta a ilusão contemporânea de que a facilidade proporcionada pela inteligência artificial representa evolução cognitiva do ser humano. O autor argumenta que a terceirização generalizada do intelecto gera perda irremediável de profundidade analítica, habituando a mente a um determinismo passivo de buscas rápidas e soluções por força bruta ("go horse"). Defende que o propósito primordial de estudar e pensar não é a infalibilidade do resultado prático, mas o próprio exercício do raciocínio crítico: assim como a física aristotélica guarda valor inestimável por instigar o pensamento mesmo quando superada empiricamente, o ato de filosofar é o que preserva a autonomia da inteligência contra a atrofia.',
     scholia: [
       {
         term: 'Determinismo',
@@ -42,7 +42,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'sorte-sucesso-e-injustica': {
     gravitas: 'modicus',
     aphorismus: 'Sabendo o que é melhor, ela escolheu a ignorância ou nunca teve a oportunidade de saber?',
-    resumo: 'O autor examina a composição moral do sucesso comercial baseado na exploração da ignorância alheia. Questiona se alimentar a estupidez social para enriquecer é ético e reflete se as pessoas realmente escolhem a ignorância ou se são privadas do discernimento.',
+    resumo: 'Uma provocativa investigação ética sobre as engrenagens silenciosas do sucesso comercial baseado na exploração da ingenuidade pública. Recusando a discussão convencional sobre mérito ou sorte, o autor questiona a legitimidade moral de lucrar através do rebaixamento intelectual da sociedade, alimentando um consumo raso que perpetua a estupidez coletiva. Formula a questão fundamental sobre a ignorância: ela pode ser considerada uma escolha individual quando o indivíduo jamais teve a oportunidade ou a luz para discernir o melhor, ou capitalizar sobre essa privação equivale a abusar deliberadamente da vulnerabilidade de quem não tem defesas?',
     scholia: [
       {
         term: 'Injustiça',
@@ -64,7 +64,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'verdade-e-mentira-social': {
     gravitas: 'gravis',
     aphorismus: 'A gravidade não pede a sua opinião se deve atrair: as coisas são verdades independentes dos seus efeitos.',
-    resumo: 'O ensaio confronta a naturalização da falsidade sob o rótulo de convenção social e habilidades relacionais (soft skills). Apoiando-se na anedota de São Tomás de Aquino, afirma a gravidade ontológica da mentira e sustenta que a verdade independe de conveniências ou de efeitos práticos imediatos.',
+    resumo: 'O autor confronta a complacência moderna com a falsidade relacional, recusando travestir o ato de pensar X e dizer Y sob rótulos corporativos ou sociais de "soft skills". Resgatando a máxima de São Tomás de Aquino sobre a improbabilidade ontológica de um cristão mentir, estabelece a distinção basilar entre a maldade da pessoa e a maldade objetiva do ato de falsear. Apresenta um modelo analítico de mentira baseado em "tom" (disposição interna) e "grau" (intensidade), sustentando que a verdade possui existência real e objetiva independente de conveniências humanas, aplausos ou consequências utilitárias. Conclui que a mentira social atua como uma droga anestésica que corrompe o discernimento, alertando que mesmo o silêncio complacente pode se constituir em mentira.',
     scholia: [
       {
         term: 'Ontologia',
@@ -91,7 +91,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'filosofia-teologia-e-artes-liberais': {
     gravitas: 'gravis',
     aphorismus: 'Se você só sabe o quê das coisas e não sabe o porquê, você é um decorador.',
-    resumo: 'Discute os pré-requisitos intelectuais necessários para o estudo da filosofia e da teologia. Explica as sete artes liberais divididas em Trivium (linguagem) e Quadrivium (ciências exatas da lógica e proporção), resgatando o rigor da Academia platônica e a distinção aristotélica entre techne, física e metafísica.',
+    resumo: 'Uma rigorosa crítica pedagógica à inversão educacional contemporânea que tenta introduzir os estudantes diretamente nas ciências elevadas (como a teologia e a ética superior) sem a indispensável propedêutica das sete artes liberais e da reflexão filosófica básica. O autor distingue categoricamente o "saber o quê" (mera memorização passiva e decoreba) do "saber o porquê" (verdadeiro domínio das causas primeiras). Recupera a estrutura clássica do Trivium (gramática, dialética e retórica) como domínio da linguagem e do pensamento, e do Quadrivium (aritmética, geometria, música e astronomia) como percepção das proporções cósmicas, reafirmando o princípio platônico da Academia de que o acesso às verdades mais sublimes exige preparação intelectual e voluntário compromisso com o rigor.',
     scholia: [
       {
         term: 'Trivium',
@@ -143,7 +143,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'suicidio': {
     gravitas: 'gravis',
     aphorismus: 'E se o propósito da existência for ser?',
-    resumo: 'Uma investigação filosófica sobre a lógica, ontologia e temporalidade do suicídio. O texto diferencia vida biológica, vida consciente abstrata e vida biográfica, recorrendo ao conceito aristotélico de Telos e questionando o suicídio gradual em hábitos de anestesia mental e negação da existência.',
+    resumo: 'Um aprofundado exame filosófico que busca desvendar a coerência lógica e as falhas ontológicas subjacentes ao suicídio. O autor desmonta o raciocínio niilista ("a vida não tem sentido, logo não há por que viver"), evidenciando que ele confunde a incapacidade subjetiva de cognoscer o propósito com a sua inexistência objetiva. Mapeia a questão em vertentes materialistas e teleológicas sob o conceito aristotélico de Telos, examinando a dialética entre altruísmo, vaidade do reconhecimento e a finitude cósmica. Diferencia a existência em três níveis — vida biológica (função orgânica), vida consciente abstrata (capacidade de indagar o sentido) e vida biográfica (a realização concreta do ser no tempo). A partir disso, formula a tese do "suicídio prospectivo": a destruição interna e cotidiana através de drogas, hábitos entorpecentes e fuga do potencial humano, que diferem da morte física imediata apenas na variável do tempo, mas apontam para a mesma negação radical da vida. Conclui que se o propósito transcende a mente finita, a extinção nunca pode ser a resposta racional para aquilo que não se pode esgotar por vias naturais.',
     scholia: [
       {
         term: 'Telos',
@@ -190,7 +190,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'o-valor-da-etimologia': {
     gravitas: 'levis',
     aphorismus: 'Saber a origem das palavras lhe permite conhecer histórias que você nunca saberia.',
-    resumo: 'Apresenta a etimologia como ciência que desvela a verdade oculta no interior dos vocábulos. Exemplifica como palavras aparentemente comuns — como tchau, escravo e adeus — guardam transformações culturais profundas e mostram o passado da humanidade gravado na linguagem.',
+    resumo: 'O ensaio resgata a etimologia como uma arqueologia viva do espírito humano, demonstrando que as palavras não são meros códigos gramaticais convencionais, mas repositórios da história, das virtudes e das transformações culturais da humanidade. Ao dissecar as origens de termos cotidianos — como a transição do latim sclavus para a saudação de cortesia "tchau" no vêneto, ou a locução latina ad Deum na raiz do "adeus" —, o autor revela como a linguagem preserva a memória espiritual dos povos e comprova que resgatar a genealogia dos vocábulos é um meio poderoso de reencontrar o sentido genuíno da realidade.',
     scholia: [
       {
         term: 'Etymon',
@@ -217,7 +217,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'sobre-o-sincretismo': {
     gravitas: 'modicus',
     aphorismus: 'Unir duas religiões é misturar a verdade na mentira.',
-    resumo: 'Diferencia a avaliação antropológica da avaliação teológica do sincretismo. Aponta que, sob a premissa de que a divindade é única e a verdade não se contradiz, a fusão indiferenciada de crenças divergentes acaba por relativizar a verdade fundamental.',
+    resumo: 'Uma análise que diferencia a abordagem descritiva da antropologia do julgamento valorativo da filosofia e da teologia perante o sincretismo religioso. Partindo da origem helênica do conceito em Plutarco (a aliança provisória entre cretenses contra um adversário externo), o autor demonstra que a amálgama indiferenciada de crenças com postulados contraditórios não gera síntese nem tolerância autêntica, mas a dissolução da verdade em relativismo. Sustenta que onde tudo possui o mesmo valor sem respeito ao princípio de não-contradição, o valor real de tudo se anula, resultando em uma indiferença que destrói a própria essência da fé.',
     scholia: [
       {
         term: 'Sincretismo',
@@ -239,7 +239,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'dificultar-para-aprender': {
     gravitas: 'levis',
     aphorismus: 'Nós fugimos do difícil sendo que nele é onde mais aprendemos.',
-    resumo: 'Ensaio sintético que desafia a aversão moderna à dificuldade. Argumenta que o obstáculo e a resistência intelectual são condições necessárias para a assimilação duradoura do conhecimento.',
+    resumo: 'O autor confronta a obsessão moderna pelo atalho, pela conveniência e pela remoção indiscriminada de atritos no aprendizado. Dialogando com a sabedoria estoica e com a psicologia cognitiva do esforço deliberado, defende que o obstáculo e a aporia inicial não são defeitos a serem contornados, mas as ferramentas indispensáveis pelas quais a inteligência se fortalece. A facilidade excessiva funciona como anestesia que gera a ilusão de competência passageira, enquanto o esforço diante da complexidade é a única via para a consolidação duradoura do intelecto.',
     scholia: [
       {
         term: 'Aporia',
@@ -256,7 +256,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'nunca-devemos-praticar-algo-que-e-possivelmente-mal': {
     gravitas: 'modicus',
     aphorismus: 'Correr riscos assim é perigosíssimo, mesmo sendo coisas pequenas.',
-    resumo: 'Alerta contra pequenas concessões antiéticas cotidianas cujo impacto material imediato parece desprezível. Mostra como o hábito corrompe a sensibilidade moral por degraus sucessivos, tornando atos graves aceitáveis para quem se habituou às pequenas infrações.',
+    resumo: 'Uma reflexão ética que alerta contra o perigo sutil das pequenas concessões cotidianas cujo impacto danoso imediato parece insignificante. Apoiando-se no conceito aristotélico de habitus, o ensaio demonstra que a moralidade é moldada pela repetição cumulativa das ações: quem se permite transgredir em coisas mínimas por conveniência corrompe gradualmente o discernimento do certo e do errado. Mostra que o limiar do mal não se rompe de uma só vez, mas por degraus sucessivos de anestesia moral que tornam atos graves admissíveis para quem já normalizou a desonestidade banal.',
     scholia: [
       {
         term: 'Habitus',
@@ -283,7 +283,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'a-cultura-do-vitimismo-e-a-mentira-necessidade': {
     gravitas: 'gravis',
     aphorismus: 'Claramente tentar vencer o mal com outro mal não tem funcionado.',
-    resumo: 'Percorre os golpes e rupturas da história republicana brasileira — de 1889 à Era Vargas e ao sacrifício de Tiradentes —, evidenciando a ausência de soberania popular e a manipulação das massas. Conclui que, embora as raízes históricas justifiquem a desconfiança popular, adotar a cultura da trapaça e do vitimismo não soluciona a injustiça.',
+    resumo: 'Uma contundente dissecção moral e sociológica da psique nacional que investiga a gênese da cultura do "levei vantagem" e da trapaça erigidas como falsa identidade. O autor mapeia o histórico de rupturas autoritárias do Brasil — desde a Proclamação da República de 1889 concebida como golpe militar sem respaldo popular ("o povo assistiu bestializado"), passando pela alternância oligárquica do café com leite e os sucessivos golpes da Era Vargas —, demonstrando que apenas uma ínfima fração de nossa história conheceu soberania verdadeiramente democrática. Examina a carência de arquétipos morais e o sacrifício de Tiradentes como mártir e bode expiatório de uma elite que sempre se esquivou das consequências, até a alienação do gentílico "brasileiro" gerado como ofício mercantil extrativista. O núcleo filosófico do ensaio recusa energicamente que séculos de espoliação e desamparo sirvam de salvo-conduto ético para o jeitinho e o vitimismo: o sofrimento crônico explica a tentação da mediocridade, mas não a justifica. Tentar combater a injustiça com esperteza vil é perpetuar o próprio ciclo de degradação que subjugou a nação.',
     scholia: [
       {
         term: 'Oligarquia',
@@ -335,7 +335,7 @@ export const CURATED_ARTICLE_META: Record<string, CuratedMeta> = {
   'como-a-busca-de-deus-e-o-principal-desejo-humano': {
     gravitas: 'gravis',
     aphorismus: 'O humano saiu das marcas de sangue para as marcas da alma.',
-    resumo: 'O ensaio investiga a busca humana pelo divino ao longo da história, desde as primeiras manifestações simbólicas e ritos funerários na pré-história até a cosmologia dos pré-socráticos com a noção de arché. Conecta essa trajetória à encarnação do Logos joanino e à teologia patrística de Clemente de Alexandria em Stromata, defendendo que a própria razão e a reflexão filosófica constituem um caminho pedagógico que prepara a alma para o encontro com Deus.',
+    resumo: 'O ensaio investiga a busca humana pelo divino ao longo de 300 mil anos de história, demonstrando como a capacidade de abstração e simbolismo elevou a espécie humana das marcas biológicas de sangue para as marcas transcendentais da alma. Analisa a passagem dos mitos cosmológicos para a filosofia pré-socrática na busca pelo arché (em Tales e Heráclito), identificando nas causas primeiras os atributos seminais da criação e do governo divino. Conecta essa inquietação à encarnação do Logos bíblico (o Verbo da Vulgata que se fez carne) e à teologia patrística de Clemente de Alexandria em Stromata, sustentando a tese de que a filosofia helênica não foi um desvio pagão antagônico, mas uma pedagogia preparatória e providencial para o encontro com o Criador.',
     scholia: [
       {
         term: 'Arché',
