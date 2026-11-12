@@ -15,6 +15,7 @@ const AJUDA_IDLE = `📖 Ensaios:
 /criar — novo ensaio
 /editar — busca um ensaio pra alterar
 /listar — busca um ensaio só pra ler
+/enriquecer — enriquece ensaio com resumo, scholia e fontes via IA
 /analise — análise crítica com IA (IA A e IA B)
 /contrapor — debate socrático e objeções duras
 /fontes — busca fontes confiáveis para o ensaio
@@ -44,7 +45,7 @@ function ajudaContextual(session) {
   }
   if (session.mode === "editando") {
     const blocoInfo = session.blocoAlvo ? `\n(Editando Bloco #${session.blocoAlvo})` : "";
-    return `Editando ${session.path}:${blocoInfo}\n/editar <id> — edita só um bloco específico\n/colar — cola mensagens até você mandar /end\n/reescrever — substitui todo o texto\n/revisar — análise editorial com IA\n/contrapor — debate socrático\n/fontes — busca fontes confiáveis para o fim\n/sugerir — sugestões de títulos e descrição\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
+    return `Editando ${session.path}:${blocoInfo}\n/editar <id> — edita só um bloco específico\n/enriquecer — enriquece metadados e fontes com IA\n/colar — cola mensagens até você mandar /end\n/reescrever — substitui todo o texto\n/revisar — análise editorial com IA\n/contrapor — debate socrático\n/fontes — busca fontes confiáveis para o fim\n/sugerir — sugestões de títulos e descrição\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
   }
   if (session.mode === "escrevendo") {
     return `Escrevendo "${session.title}":\n/revisar — análise editorial com IA\n/contrapor — debate socrático e objeções\n/fontes — busca fontes confiáveis para o fim\n/sugerir — sugestões de títulos e descrição\n/end — conclui para análise final e publicação\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
@@ -169,6 +170,13 @@ async function handleUpdate(update, env) {
   if (text?.startsWith("/listar") || text?.startsWith("/lista")) {
     const termo = text.replace(/^\/(listar|lista)/, "").trim().toLowerCase();
     return startBusca(env, chatId, termo, "listar");
+  }
+  if (text?.startsWith("/enriquecer")) {
+    const termo = text.replace("/enriquecer", "").trim().toLowerCase();
+    if (session?.mode === "editando") {
+      return handleEditando(env, chatId, session, msg, text);
+    }
+    return startBusca(env, chatId, termo, "enriquecer");
   }
   if (text?.startsWith("/analise") || text?.startsWith("/analisar")) {
     const termo = text.replace(/^\/(analise|analisar)/, "").trim().toLowerCase();
@@ -312,6 +320,7 @@ async function handleCallback(cq, env) {
     if (list.acao === "fontes") return runArticleSources(env, chatId, path);
     if (list.acao === "card") return runGenerateCard(env, chatId, path);
     if (list.acao === "historico") return runArticleHistory(env, chatId, path);
+    if (list.acao === "enriquecer") return runEnrichArticle(env, chatId, path);
     return sendForEditing(env, chatId, path);
   }
 }
@@ -471,13 +480,34 @@ async function handleEscrevendo(env, chatId, session, msg, text) {
   return prepararRevisaoEConfirmacao(env, chatId, header, body, md);
 }
 
-function buildMarkdown({ title, date, description, tags, pinned }, body) {
-  const lines = ["---", `title: ${JSON.stringify(title)}`, `date: ${date}`, `description: ${JSON.stringify(description)}`];
+function buildMarkdown({ title, date, description, tags, pinned, gravitas, aphorismus, resumo, scholia }, body) {
+  const lines = [
+    "---",
+    `title: ${JSON.stringify(title || "")}`,
+    `date: ${date}`,
+    `description: ${JSON.stringify(description || "")}`,
+  ];
   if (tags?.length) {
     lines.push("tags:");
     for (const tag of tags) lines.push(`  - ${tag}`);
   }
   if (pinned) lines.push("pinned: true");
+  if (gravitas) lines.push(`gravitas: ${gravitas}`);
+  if (aphorismus) lines.push(`aphorismus: ${JSON.stringify(aphorismus)}`);
+  if (resumo) lines.push(`resumo: ${JSON.stringify(resumo)}`);
+  if (scholia?.length) {
+    lines.push("scholia:");
+    for (const s of scholia) {
+      const term = s.term || s.termo || "";
+      const etymology = s.etymology || s.etimologia || "";
+      const meaning = s.meaning || s.definicao || "";
+      if (term) {
+        lines.push(`  - term: ${JSON.stringify(term)}`);
+        lines.push(`    etymology: ${JSON.stringify(etymology)}`);
+        lines.push(`    meaning: ${JSON.stringify(meaning)}`);
+      }
+    }
+  }
   lines.push("---", "", body.trim(), "");
   return lines.join("\n");
 }
@@ -880,8 +910,194 @@ async function extrairFraseMarcante(env, title, body) {
   return linhas[0] || title;
 }
 
+const PROMPT_ENRIQUECIMENTO = `Você é o curador filosófico e editor-chefe do blog Aletheia.
+Sua missão é analisar o ensaio fornecido (que é uma reflexão filosófica pessoal, honesta e reflexiva) e produzir metadados conceituais profundos e rigorosos no formato JSON estrito.
+
+Diretrizes obrigatórias:
+1. "gravitas": Classificação do peso reflexivo:
+   - "levis": ensaio ágil, crônica ou reflexão rápida.
+   - "modicus": ensaio de média extensão, boa densidade argumentativa.
+   - "gravis": ensaio denso, metafísico, histórico profundo ou com teses ontológicas/éticas complexas.
+
+2. "resumo": Síntese filosófica densa, substantiva e analítica (1 a 2 parágrafos, entre 120 e 250 palavras).
+   - NUNCA faça resumos telegráficos, superficiais ou que apenas listem nomes e fatos (como "análise histórica do Brasil e fala de fulano e fulano").
+   - Detalhe a problemática ontológica ou existencial que move o texto.
+   - Reconstitua o fio condutor da argumentação e os conceitos centrais.
+   - Explicite a conclusão ética, ontológica ou epistemológica defendida pelo autor.
+   - Mantenha tom solene, digno e analítico.
+
+3. "scholia": Glossário conceitual e etimológico com 2 a 5 termos filosóficos, gregos, latinos ou históricos centrais para a reflexão. Cada item deve conter:
+   - "term": o termo ou conceito (ex.: "Logos", "Arché", "Anacronismo", "Res Publica", "Mímesis", "Stromata").
+   - "etymology": a raiz etimológica precisa (ex.: "Do grego archē (ἀρχή), princípio, origem ou causa primeira.").
+   - "meaning": a explicação aprofundada de como o conceito opera no argumento do ensaio.
+
+4. "aphorismus": Uma citação marcante, instigante e afiada contida LITERALMENTE no texto do autor (máximo 140 caracteres) para servir de axioma do ensaio.
+
+Retorne APENAS o JSON válido, sem cercas de código (\`\`\`json) e sem explicações:
+{
+  "gravitas": "modicus",
+  "aphorismus": "...",
+  "resumo": "...",
+  "scholia": [
+    {
+      "term": "...",
+      "etymology": "...",
+      "meaning": "..."
+    }
+  ]
+}`;
+
+async function gerarMetadadosIa(env, title, body) {
+  let rawJson = null;
+
+  if (env.NVIDIA_API_KEY) {
+    try {
+      const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "nvidia/llama-3.1-nemotron-70b-instruct",
+          messages: [
+            { role: "system", content: PROMPT_ENRIQUECIMENTO },
+            { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+          ],
+          temperature: 0.2,
+          max_tokens: 1500,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        rawJson = data.choices?.[0]?.message?.content?.trim();
+      }
+    } catch {}
+  }
+
+  if (!rawJson && env.AI) {
+    try {
+      const res = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [
+          { role: "system", content: PROMPT_ENRIQUECIMENTO },
+          { role: "user", content: `Título: ${title}\n\nTexto do ensaio:\n${body}` },
+        ],
+        max_tokens: 1500,
+      });
+      rawJson = res?.response?.trim();
+    } catch {}
+  }
+
+  if (!rawJson) return null;
+
+  try {
+    const cleaned = rawJson
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+    const parsed = JSON.parse(cleaned);
+    return {
+      gravitas: ["levis", "modicus", "gravis"].includes(parsed.gravitas) ? parsed.gravitas : "modicus",
+      aphorismus: typeof parsed.aphorismus === "string" ? parsed.aphorismus.trim() : null,
+      resumo: typeof parsed.resumo === "string" ? parsed.resumo.trim() : null,
+      scholia: Array.isArray(parsed.scholia)
+        ? parsed.scholia
+            .filter((s) => s && (s.term || s.termo))
+            .map((s) => ({
+              term: (s.term || s.termo || "").trim(),
+              etymology: (s.etymology || s.etimologia || "").trim(),
+              meaning: (s.meaning || s.definicao || "").trim(),
+            }))
+        : [],
+    };
+  } catch (err) {
+    console.error("Erro ao fazer parse do JSON de metadados:", err);
+    return null;
+  }
+}
+
+async function enriquecerEnsaioComIa(env, header, body) {
+  let novoBody = body.trim();
+  let fontesAdicionadas = false;
+
+  // 1. Fontes bibliográficas confiáveis
+  const temFontes = /##\s*Fontes(?:\s+e\s+Leituras\s+Recomendadas)?/i.test(novoBody);
+  const avisoIa = "_Fontes obtidas através de inteligência artificial no escaneamento do tema._";
+
+  if (!temFontes) {
+    try {
+      const fontes = await consultarFontesIa(env, header.title, novoBody);
+      if (fontes) {
+        novoBody = `${novoBody}\n\n${fontes.trim()}`;
+        fontesAdicionadas = true;
+      }
+    } catch {}
+  } else if (!novoBody.includes(avisoIa)) {
+    novoBody = novoBody.replace(
+      /(##\s*Fontes(?:\s+e\s+Leituras\s+Recomendadas)?\s*\n+)/i,
+      `$1${avisoIa}\n\n`
+    );
+  }
+
+  // 2. Metadados Filosóficos
+  let gravitas = header.gravitas;
+  let aphorismus = header.aphorismus;
+  let resumo = header.resumo;
+  let scholia = header.scholia || [];
+
+  try {
+    const meta = await gerarMetadadosIa(env, header.title, novoBody);
+    if (meta) {
+      if (!gravitas && meta.gravitas) gravitas = meta.gravitas;
+      if (!aphorismus && meta.aphorismus) aphorismus = meta.aphorismus;
+      if ((!resumo || resumo.length < 80) && meta.resumo) resumo = meta.resumo;
+      if ((!scholia || scholia.length === 0) && meta.scholia?.length) scholia = meta.scholia;
+    }
+  } catch {}
+
+  if (!aphorismus) {
+    try {
+      aphorismus = await extrairFraseMarcante(env, header.title, novoBody);
+    } catch {}
+  }
+
+  const enrichedHeader = {
+    ...header,
+    gravitas: gravitas || "modicus",
+    aphorismus: aphorismus || "",
+    resumo: resumo || "",
+    scholia: scholia || [],
+  };
+
+  const enrichedMarkdown = buildMarkdown(enrichedHeader, novoBody);
+
+  return {
+    header: enrichedHeader,
+    body: novoBody,
+    markdown: enrichedMarkdown,
+    fontesAdicionadas,
+  };
+}
+
 async function prepararRevisaoEConfirmacao(env, chatId, header, body, markdown) {
-  const problemas = validateFrontmatter(markdown);
+  await send(env, chatId, "✨ Analisando e enriquecendo ensaio com IA (resumo filosófico, scholia, fontes e metadados)...");
+
+  let enrichedHeader = header;
+  let enrichedBody = body;
+  let enrichedMarkdown = markdown;
+  let fontesAdicionadas = false;
+
+  try {
+    const resEnrich = await enriquecerEnsaioComIa(env, header, body);
+    enrichedHeader = resEnrich.header;
+    enrichedBody = resEnrich.body;
+    enrichedMarkdown = resEnrich.markdown;
+    fontesAdicionadas = resEnrich.fontesAdicionadas;
+  } catch (e) {
+    console.error("Erro no enriquecimento:", e);
+  }
+
+  const problemas = validateFrontmatter(enrichedMarkdown);
   if (problemas.length) {
     await env.KV.delete(sessionKey(chatId));
     return send(env, chatId, `⚠️ Não posso publicar: faltou ${problemas.join(", ")} no frontmatter.`);
@@ -889,20 +1105,29 @@ async function prepararRevisaoEConfirmacao(env, chatId, header, body, markdown) 
 
   await saveSession(env, chatId, {
     mode: "revisar-publicar",
-    header,
-    body,
-    markdown,
+    header: enrichedHeader,
+    body: enrichedBody,
+    markdown: enrichedMarkdown,
   });
 
   try {
-    await enviarRelatoriosDuplos(env, chatId, header.title, body);
+    await enviarRelatoriosDuplos(env, chatId, enrichedHeader.title, enrichedBody);
   } catch (e) {
     await send(env, chatId, `⚠️ Não foi possível obter as análises da IA (${e.message}), mas você ainda pode publicar.`);
   }
 
+  const scholiaCount = enrichedHeader.scholia?.length || 0;
+  const resumoPreview = enrichedHeader.resumo
+    ? `\n\n📖 *Resumo Filosófico:*\n_${enrichedHeader.resumo}_`
+    : "";
+  const scholiaPreview = scholiaCount > 0
+    ? `\n\n🏛️ *Scholia (${scholiaCount} termos):* ${enrichedHeader.scholia.map((s) => `\`${s.term}\``).join(", ")}`
+    : "";
+  const fontesInfo = fontesAdicionadas ? "\n📚 *Fontes e Leituras Recomendadas adicionadas ao final.*" : "";
+
   return tg(env, "sendMessage", {
     chat_id: chatId,
-    text: `Deseja publicar "${header.title}" no blog?`,
+    text: `Deseja publicar "${enrichedHeader.title}" no blog?${resumoPreview}${scholiaPreview}${fontesInfo}\n\n⚖️ Gravitas: *${enrichedHeader.gravitas}* | 💬 Citação: "${enrichedHeader.aphorismus}"`,
     reply_markup: {
       inline_keyboard: [
         [
@@ -960,6 +1185,7 @@ async function startBusca(env, chatId, termo, acao) {
     sugerir: "sugerir título/descrição",
     card: "gerar card editorial",
     historico: "ver histórico de revisões",
+    enriquecer: "enriquecer com IA (resumo, scholia e fontes)",
   };
   const emojis = {
     editar: "✏️",
@@ -969,6 +1195,7 @@ async function startBusca(env, chatId, termo, acao) {
     sugerir: "💡",
     card: "🎨",
     historico: "📜",
+    enriquecer: "✨",
   };
   const rotulo = rotulos[acao] ?? "ler";
   const emoji = emojis[acao] ?? "🔎";
@@ -1249,7 +1476,7 @@ async function runGenerateCard(env, chatId, path) {
   );
 }
 
-async function sendForEditing(env, chatId, path) {
+async function runEnrichArticle(env, chatId, path) {
   let file;
   try {
     file = await getFile(env, path);
@@ -1258,6 +1485,48 @@ async function sendForEditing(env, chatId, path) {
   }
 
   const { data: fm, body } = parseFrontmatter(file.text);
+  const header = extractHeader(fm) || {
+    title: fileName(path).replace(/^\d+\./, "").replace(/\.md$/, ""),
+    date: today(),
+    description: "",
+  };
+
+  await send(env, chatId, `✨ Enriquecendo "${header.title}" com IA (resumo profundo, scholia e fontes)... Aguarde.`);
+
+  try {
+    const { header: enrichedHeader, markdown: enrichedMarkdown, fontesAdicionadas } =
+      await enriquecerEnsaioComIa(env, header, body || file.text);
+
+    const commitSha = await commitFile(
+      env,
+      path,
+      enrichedMarkdown,
+      `revisão(ia): enriquece metadados e fontes de ${fileName(path)}`,
+      file.sha
+    );
+
+    const scholiaCount = enrichedHeader.scholia?.length || 0;
+    const fontesInfo = fontesAdicionadas ? "\n📚 Fontes e leituras adicionadas com aviso de IA." : "";
+
+    await send(
+      env,
+      chatId,
+      `✅ Ensaio enriquecido e salvo no GitHub!\n${commitSha ? `Commit: \`${commitSha.slice(0, 7)}\`\n` : ""}⚖️ Gravitas: *${enrichedHeader.gravitas}*\n📖 Resumo filosófico gerado.\n🏛️ Scholia: ${scholiaCount} termos.\n💬 Citação: "${enrichedHeader.aphorismus}"${fontesInfo}\n\nAguardando deploy da Vercel...`
+    );
+    await avisarLink(env, chatId, slugFromPath(path), commitSha);
+  } catch (e) {
+    return send(env, chatId, `⚠️ Erro ao enriquecer ensaio: ${e.message}`);
+  }
+}
+
+async function sendForEditing(env, chatId, path) {
+  let file;
+  try {
+    file = await getFile(env, path);
+  } catch (e) {
+    return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
+  }
+
   const blocks = splitTextIntoBlocks(file.text, LIMITE_TEXTO);
 
   // O sha identifica a versão exata que você baixou (evita sobrescrever uma
@@ -1296,13 +1565,7 @@ function montarTextoComBlocoEditado(original, blocos, blocoIdx, novoTextoBloco) 
   if (blocoIdx === 0) {
     const { data: fmNovo } = parseFrontmatter(novoTextoBloco);
     if (!fmNovo && fmOriginal) {
-      const header = {
-        title: extractField(fmOriginal, "title"),
-        date: extractField(fmOriginal, "date"),
-        description: extractField(fmOriginal, "description"),
-        tags: extractTags(fmOriginal),
-        pinned: extractPinned(fmOriginal),
-      };
+      const header = extractHeader(fmOriginal);
       novosBlocos[0] = buildMarkdown(header, novoTextoBloco.trim());
       return novosBlocos.join("\n\n");
     }
@@ -1318,13 +1581,7 @@ function montarTextoEditado(original, novoConteudo, modo) {
 
   if (modo === "reescrever") {
     if (fmNovo) return novoConteudo;
-    const header = {
-      title: extractField(fmOriginal, "title"),
-      date: extractField(fmOriginal, "date"),
-      description: extractField(fmOriginal, "description"),
-      tags: extractTags(fmOriginal),
-      pinned: extractPinned(fmOriginal),
-    };
+    const header = extractHeader(fmOriginal);
     return buildMarkdown(header, novoConteudo.trim());
   }
 
@@ -1332,13 +1589,7 @@ function montarTextoEditado(original, novoConteudo, modo) {
   if (!fmOriginal) {
     return `${original.trim()}\n\n${corpoAdicionar}\n`;
   }
-  const header = {
-    title: extractField(fmOriginal, "title"),
-    date: extractField(fmOriginal, "date"),
-    description: extractField(fmOriginal, "description"),
-    tags: extractTags(fmOriginal),
-    pinned: extractPinned(fmOriginal),
-  };
+  const header = extractHeader(fmOriginal);
   const corpoAtualizado = `${bodyOriginal.trim()}\n\n${corpoAdicionar}`;
   return buildMarkdown(header, corpoAtualizado);
 }
@@ -1558,6 +1809,32 @@ async function handleEditando(env, chatId, session, msg, text) {
     }
   }
 
+  // Enriquecimento com IA sob demanda durante a edição
+  if (text === "/enriquecer") {
+    const alvo = session.pendente ?? session.original;
+    const { data: fm, body } = parseFrontmatter(alvo);
+    const header = extractHeader(fm) || {
+      title: extractField(fm, "title") || fileName(session.path),
+      date: extractField(fm, "date") || today(),
+      description: extractField(fm, "description") || "",
+    };
+    await send(env, chatId, `✨ Enriquecendo "${header.title}" com IA (resumo profundo, scholia e fontes)...`);
+    try {
+      const { markdown: enrichedMarkdown, header: enrichedHeader, fontesAdicionadas } =
+        await enriquecerEnsaioComIa(env, header, body || alvo);
+      const scholiaCount = enrichedHeader.scholia?.length || 0;
+      const fontesInfo = fontesAdicionadas ? "\n📚 Fontes adicionadas com aviso de IA." : "";
+      await send(
+        env,
+        chatId,
+        `✨ Ensaio enriquecido:\n⚖️ Gravitas: *${enrichedHeader.gravitas}*\n📖 Resumo: _${enrichedHeader.resumo}_\n🏛️ Scholia: ${scholiaCount} termos.\n💬 Citação: "${enrichedHeader.aphorismus}"${fontesInfo}`
+      );
+      return commitEdit(env, chatId, session, enrichedMarkdown, "metadados e fontes enriquecidos com IA");
+    } catch (e) {
+      return send(env, chatId, `⚠️ Erro ao enriquecer: ${e.message}`);
+    }
+  }
+
   // Chegou um conteúdo novo (texto, áudio ou arquivo): guarda como pendente e DÁ FEEDBACK IMEDIATO ao usuário!
   let conteudo = text;
   const audioId = getAudioFileId(msg);
@@ -1591,15 +1868,14 @@ async function handlePinOuTag(env, chatId, session, text) {
   const { data: fm, body } = parseFrontmatter(atual);
   if (!fm) return send(env, chatId, "Não encontrei o frontmatter desse ensaio para alterar.");
 
-  const title = extractField(fm, "title");
-  const date = extractField(fm, "date");
-  const description = extractField(fm, "description");
-  let tags = extractTags(fm);
-  let pinned = extractPinned(fm);
+  const header = extractHeader(fm);
+  let tags = header.tags || [];
+  let pinned = header.pinned || false;
   let resumo;
 
   if (text === "/pin") {
     pinned = !pinned;
+    header.pinned = pinned;
     resumo = pinned ? "fixado" : "desafixado";
   } else {
     const tag = text.replace(/^\/tag/, "").trim().toLowerCase();
@@ -1611,9 +1887,10 @@ async function handlePinOuTag(env, chatId, session, text) {
       tags = [...tags, tag];
       resumo = `tag "${tag}" adicionada`;
     }
+    header.tags = tags;
   }
 
-  const novo = buildMarkdown({ title, date, description, tags, pinned }, body);
+  const novo = buildMarkdown(header, body);
   return commitEdit(env, chatId, session, novo, resumo);
 }
 
@@ -2130,7 +2407,15 @@ function parseFrontmatter(md) {
 function extractField(fm, name) {
   const m = fm.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
   if (!m) return null;
-  return m[1].trim().replace(/^["']|["']$/g, "") || null;
+  const raw = m[1].trim();
+  if (raw.startsWith('"') && raw.endsWith('"')) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return raw.slice(1, -1);
+    }
+  }
+  return raw.replace(/^["']|["']$/g, "") || null;
 }
 
 function extractTags(fm) {
@@ -2145,6 +2430,42 @@ function extractTags(fm) {
 function extractPinned(fm) {
   const m = fm.match(/^pinned:\s*(true|false)\s*$/m);
   return m ? m[1] === "true" : false;
+}
+
+function parseScholia(fm) {
+  if (!fm) return [];
+  const scholiaMatch = fm.match(/^scholia:\s*\n((?:[ \t]+[^\n]+\n?)+)/im);
+  if (!scholiaMatch) return [];
+  const block = scholiaMatch[1];
+  const items = [];
+  const entries = block.split(/\n(?=[ \t]+-[ \t]+)/).map((e) => e.trim()).filter(Boolean);
+  for (const entry of entries) {
+    const termM = entry.match(/term(?:o)?:\s*(?:"([^"]*)"|'([^']*)'|([^\n]+))/i);
+    const etymM = entry.match(/etymolog(?:y|ia)?:\s*(?:"([^"]*)"|'([^']*)'|([^\n]+))/i);
+    const meanM = entry.match(/(?:meaning|definicao):\s*(?:"([^"]*)"|'([^']*)'|([^\n]+))/i);
+    const term = termM ? (termM[1] || termM[2] || termM[3] || "").trim() : "";
+    const etymology = etymM ? (etymM[1] || etymM[2] || etymM[3] || "").trim() : "";
+    const meaning = meanM ? (meanM[1] || meanM[2] || meanM[3] || "").trim() : "";
+    if (term) {
+      items.push({ term, etymology, meaning });
+    }
+  }
+  return items;
+}
+
+function extractHeader(fm) {
+  if (!fm) return null;
+  return {
+    title: extractField(fm, "title"),
+    date: extractField(fm, "date"),
+    description: extractField(fm, "description"),
+    tags: extractTags(fm),
+    pinned: extractPinned(fm),
+    gravitas: extractField(fm, "gravitas"),
+    aphorismus: extractField(fm, "aphorismus"),
+    resumo: extractField(fm, "resumo"),
+    scholia: parseScholia(fm),
+  };
 }
 
 // title, date e description são obrigatórios no schema do blog (content.config.ts).
