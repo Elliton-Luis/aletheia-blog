@@ -16,6 +16,8 @@ const AJUDA_IDLE = `📖 Ensaios:
 /editar — busca um ensaio pra alterar
 /listar — busca um ensaio só pra ler
 /enriquecer — enriquece ensaio com resumo, scholia e fontes via IA
+/desfazer — reverte a última alteração feita no GitHub
+/restaurar — recupera último texto cancelado ou descartado
 /analise — análise crítica com IA (IA A e IA B)
 /contrapor — debate socrático e objeções duras
 /fontes — busca fontes confiáveis para o ensaio
@@ -43,9 +45,12 @@ function ajudaContextual(session) {
   if (session.mode === "revisar-publicar") {
     return `Ensaio aguardando confirmação:\n/publicar — publica no blog\n/cancelar — desiste\nOu mande uma mensagem (texto/áudio) para continuar editando.`;
   }
+  if (session.mode === "confirmar-edicao") {
+    return `Alteração aguardando sua confirmação:\n/confirmar — aplica e publica no GitHub\n/ver — vê prévia do ensaio\n/cancelar — descarta alteração`;
+  }
   if (session.mode === "editando") {
     const blocoInfo = session.blocoAlvo ? `\n(Editando Bloco #${session.blocoAlvo})` : "";
-    return `Editando ${session.path}:${blocoInfo}\n/editar <id> — edita só um bloco específico\n/enriquecer — enriquece metadados e fontes com IA\n/colar — cola mensagens até você mandar /end\n/reescrever — substitui todo o texto\n/revisar — análise editorial com IA\n/contrapor — debate socrático\n/fontes — busca fontes confiáveis para o fim\n/sugerir — sugestões de títulos e descrição\n/pin — liga/desliga fixado\n/tag nome-da-tag — adiciona ou remove\n/cancelar — desiste`;
+    return `Editando ${session.path}:${blocoInfo}\n• /trocar "antigo" por "novo" — substituição cirúrgica\n• /titulo <novo> — altera só o título\n• /descricao <nova> — altera só a descrição\n• /editar <id> — edita bloco específico\n• /colar — acrescenta ao fim (antes das fontes)\n• /reescrever — substitui todo o texto\n• /enriquecer — enriquece metadados e fontes com IA\n• /ver — visualiza o ensaio completo\n• /pin — liga/desliga fixado\n• /tag nome — adiciona ou remove tag\n• /cancelar — descarta alterações (salva na lixeira)`;
   }
   if (session.mode === "escrevendo") {
     return `Escrevendo "${session.title}":\n/revisar — análise editorial com IA\n/contrapor — debate socrático e objeções\n/fontes — busca fontes confiáveis para o fim\n/sugerir — sugestões de títulos e descrição\n/end — conclui para análise final e publicação\n/rascunho — salva sem publicar e sai\n/cancelar — desiste`;
@@ -150,9 +155,32 @@ async function handleUpdate(update, env) {
   // Comandos globais: sempre interrompem o que estiver em andamento
   if (text === "/start" || text === "/ajuda") return send(env, chatId, ajudaContextual(session));
   if (text === "/cancelar") {
+    if (session) {
+      const conteudoLixeira = session.novo || session.pendente || session.body || session.bufferBloco || session.colarBuffer;
+      if (conteudoLixeira) {
+        await env.KV.put(
+          backupKey(chatId),
+          JSON.stringify({
+            text: conteudoLixeira,
+            path: session.path || null,
+            title: session.title || session.titulo || null,
+            acao: session.acao || null,
+            discardedAt: Date.now(),
+          }),
+          { expirationTtl: 60 * 60 * 24 } // 24 horas
+        );
+      }
+    }
     await env.KV.delete(sessionKey(chatId));
     const canceladas = await cancelarExclusoesPendentes(env, chatId);
-    return send(env, chatId, canceladas.length ? `🗑️ Cancelado (inclusive a exclusão de ${canceladas.join(", ")}).` : "🗑️ Cancelado.");
+    const avisoLixeira = " (o rascunho foi salvo na lixeira — use /restaurar se foi por engano).";
+    return send(env, chatId, canceladas.length ? `🗑️ Cancelado (inclusive a exclusão de ${canceladas.join(", ")})${avisoLixeira}` : `🗑️ Cancelado${avisoLixeira}`);
+  }
+  if (text === "/desfazer" || text?.startsWith("/desfazer ")) {
+    return handleDesfazer(env, chatId, text.replace(/^\/desfazer/, "").trim());
+  }
+  if (text === "/restaurar") {
+    return handleRestaurar(env, chatId);
   }
   if (text === "/link") {
     if (!env.SITE_URL) return send(env, chatId, "SITE_URL não está configurado no wrangler.toml.");
@@ -211,11 +239,14 @@ async function handleUpdate(update, env) {
     return startBusca(env, chatId, text.replace("/deletar", "").trim().toLowerCase(), "deletar");
   }
   if (text === "/rascunhos") return listarRascunhos(env, chatId);
-  if (text === "/publicar") {
+  if (text === "/publicar" || text === "/confirmar") {
     if (session?.mode === "revisar-publicar") {
       return finalizeNewPost(env, chatId, session.header.title, session.markdown);
     }
-    return send(env, chatId, "Nenhum ensaio aguardando publicação. Use /criar para começar.");
+    if (session?.mode === "confirmar-edicao") {
+      return finalizeEdit(env, chatId, session);
+    }
+    return send(env, chatId, "Nenhum ensaio ou alteração aguardando publicação. Use /criar ou /editar.");
   }
 
   // Transcrição de áudio avulsa (fora de fluxos de criação/edição)
@@ -280,6 +311,155 @@ async function handleCallback(cq, env) {
     return send(env, chatId, "🗑️ Publicação cancelada.");
   }
 
+  // Confirmação de edição do ensaio (Double Check de Segurança)
+  if (data === "ed:confirmar") {
+    const session = await env.KV.get(sessionKey(chatId), "json");
+    if (!session || session.mode !== "confirmar-edicao") {
+      return send(env, chatId, "Essa alteração expirou. Use /editar para recomeçar.");
+    }
+    return finalizeEdit(env, chatId, session);
+  }
+  if (data === "ed:descartar") {
+    const session = await env.KV.get(sessionKey(chatId), "json");
+    if (session?.novo) {
+      await env.KV.put(
+        backupKey(chatId),
+        JSON.stringify({
+          text: session.novo,
+          path: session.path || null,
+          title: session.titulo || null,
+          acao: session.resumo || null,
+          discardedAt: Date.now(),
+        }),
+        { expirationTtl: 60 * 60 * 24 }
+      );
+    }
+    await env.KV.delete(sessionKey(chatId));
+    return send(env, chatId, "🗑️ Alteração descartada. Nenhuma modificação foi feita no blog.\n\n💡 Se foi por engano, use /restaurar para recuperar o texto.");
+  }
+  if (data === "ed:ver_previa") {
+    const session = await env.KV.get(sessionKey(chatId), "json");
+    if (!session || !session.novo) return send(env, chatId, "Prévia expirada.");
+    const blocks = splitTextIntoBlocks(session.novo, LIMITE_TEXTO);
+    await send(env, chatId, `👁️ *Prévia completa do ensaio atualizado:*`);
+    for (let i = 0; i < blocks.length; i++) {
+      const prefix = blocks.length > 1 ? `📄 [Parte ${i + 1}/${blocks.length}]\n\n` : "";
+      await send(env, chatId, `${prefix}${blocks[i]}`);
+    }
+    return;
+  }
+  if (data === "ed:continuar") {
+    const session = await env.KV.get(sessionKey(chatId), "json");
+    if (!session) return send(env, chatId, "Sessão expirada. Use /editar.");
+    await saveSession(env, chatId, {
+      ...session,
+      mode: "editando",
+      original: session.novo,
+      pendente: null,
+    });
+    return send(env, chatId, `✏️ Alteração mantida em rascunho de edição. Pode enviar mais ajustes ou /cancelar.`);
+  }
+
+  // Ações do menu rápido de edição
+  if (data.startsWith("ed_menu:")) {
+    const action = data.slice("ed_menu:".length);
+    const session = await env.KV.get(sessionKey(chatId), "json");
+    if (!session || session.mode !== "editando") {
+      return send(env, chatId, "Nenhum ensaio em edição no momento. Use /editar.");
+    }
+    if (action === "colar") {
+      await saveSession(env, chatId, { ...session, acumulandoColar: true, colarBuffer: "" });
+      return send(env, chatId, `📥 *Modo Colar ativado para "${fileName(session.path)}"*\nEnvie quantas mensagens ou áudios quiser. Quando terminar, mande /end para aplicar no fim do ensaio (antes das fontes).`);
+    }
+    if (action === "blocos") {
+      const blocos = session.blocos || splitTextIntoBlocks(session.original, LIMITE_TEXTO);
+      const rows = [];
+      for (let i = 0; i < blocos.length; i += 2) {
+        const row = [{ text: `🧩 Bloco ${i + 1}`, callback_data: `ed_block:${i + 1}` }];
+        if (i + 1 < blocos.length) {
+          row.push({ text: `🧩 Bloco ${i + 2}`, callback_data: `ed_block:${i + 2}` });
+        }
+        rows.push(row);
+      }
+      return tg(env, "sendMessage", {
+        chat_id: chatId,
+        text: `Escolha o bloco que deseja editar em \`${fileName(session.path)}\`:`,
+        reply_markup: { inline_keyboard: rows },
+      });
+    }
+    if (action === "enriquecer") {
+      return runEnrichArticle(env, chatId, session.path);
+    }
+    if (action === "ver") {
+      const blocks = splitTextIntoBlocks(session.original, LIMITE_TEXTO);
+      await send(env, chatId, `👁️ *Texto atual de ${fileName(session.path)}:*`);
+      for (let i = 0; i < blocks.length; i++) {
+        await send(env, chatId, `🧩 [Bloco ${i + 1}/${blocks.length}]\n\n${blocks[i]}`);
+      }
+      return;
+    }
+    if (action === "tags") {
+      const { data: fm } = parseFrontmatter(session.original);
+      const tags = (fm && extractTags(fm)) || [];
+      const pinned = (fm && extractPinned(fm)) || false;
+      return send(
+        env,
+        chatId,
+        `🏷️ *Tags & Destaque de ${fileName(session.path)}:*\n• Tags atuais: ${tags.length ? tags.map((t) => `\`${t}\``).join(", ") : "_nenhuma_"}\n• Fixado: *${pinned ? "Sim" : "Não"}*\n\nPara alterar:\n• Envie \`/tag nome-da-tag\` para adicionar/remover\n• Envie \`/pin\` para alternar fixado`
+      );
+    }
+    if (action === "sair") {
+      await env.KV.delete(sessionKey(chatId));
+      return send(env, chatId, "🚪 Edição finalizada sem alterações.");
+    }
+  }
+
+  if (data.startsWith("ed_block:")) {
+    const numBloco = Number(data.slice("ed_block:".length));
+    const session = await env.KV.get(sessionKey(chatId), "json");
+    if (!session || session.mode !== "editando") return send(env, chatId, "Sessão expirada.");
+    const blocos = session.blocos || splitTextIntoBlocks(session.original, LIMITE_TEXTO);
+    if (numBloco < 1 || numBloco > blocos.length) return send(env, chatId, "Bloco inválido.");
+    await saveSession(env, chatId, {
+      ...session,
+      blocos,
+      blocoAlvo: numBloco,
+      acumulandoBloco: true,
+      bufferBloco: "",
+    });
+    return send(
+      env,
+      chatId,
+      `🧩 *Editando Bloco ${numBloco}/${blocos.length}*\n\nTexto atual:\n---\n${blocos[numBloco - 1]}\n---\n\nEnvie o novo texto (ou áudios). Quando terminar, mande /end para aplicar.`
+    );
+  }
+
+  if (data.startsWith("ed_open:")) {
+    const path = data.slice("ed_open:".length);
+    return sendForEditing(env, chatId, path);
+  }
+
+  // Reversão / Desfazer
+  if (data.startsWith("undo:confirm:")) {
+    const path = data.slice("undo:confirm:".length);
+    return executeUndo(env, chatId, path);
+  }
+  if (data === "undo:cancel") {
+    return send(env, chatId, "Operação de reversão cancelada.");
+  }
+
+  // Lixeira / Restaurar
+  if (data === "restaurar:criar") {
+    const backup = await env.KV.get(backupKey(chatId), "json");
+    if (!backup?.text) return send(env, chatId, "Lixeira vazia.");
+    await saveSession(env, chatId, { mode: "cabecalho-title", bodyPronto: backup.text });
+    return send(env, chatId, `✍️ Criando ensaio com o texto recuperado da lixeira.\n\nQual o título do ensaio?`);
+  }
+  if (data === "restaurar:limpar") {
+    await env.KV.delete(backupKey(chatId));
+    return send(env, chatId, "🗑️ Lixeira de segurança limpa.");
+  }
+
   // Ações do Caderno de Ideias
   if (data.startsWith("idea:use:")) {
     const id = data.slice("idea:use:".length);
@@ -306,8 +486,8 @@ async function handleCallback(cq, env) {
     });
   }
 
-  // Escolheu um ensaio na lista
-  if (data.startsWith("ed:")) {
+  // Escolheu um ensaio na lista (apenas números de índice)
+  if (data.startsWith("ed:") && /^\d+$/.test(data.slice(3))) {
     const list = await env.KV.get(listKey(chatId), "json");
     const path = list?.paths[Number(data.slice(3))];
     if (!path) return send(env, chatId, "A lista expirou. Busque de novo.");
@@ -1150,9 +1330,14 @@ async function prepararRevisaoEConfirmacao(env, chatId, header, body, markdown) 
     : "";
   const fontesInfo = fontesAdicionadas ? "\n📚 *Fontes e Leituras Recomendadas adicionadas ao final.*" : "";
 
+  const palavras = enrichedBody.trim().split(/\s+/).filter(Boolean).length;
+  const avisoExtensao = palavras < 60
+    ? `\n\n⚠️ *Aviso de Extensão:* Este texto possui apenas ${palavras} palavras (curto para o formato de ensaio).`
+    : "";
+
   return tg(env, "sendMessage", {
     chat_id: chatId,
-    text: `Deseja publicar "${enrichedHeader.title}" no blog?${resumoPreview}${scholiaPreview}${fontesInfo}\n\n⚖️ Gravitas: *${enrichedHeader.gravitas}* | 💬 Citação: "${enrichedHeader.aphorismus}"`,
+    text: `Deseja publicar "${enrichedHeader.title}" no blog?${resumoPreview}${scholiaPreview}${fontesInfo}${avisoExtensao}\n\n⚖️ Gravitas: *${enrichedHeader.gravitas}* | 💬 Citação: "${enrichedHeader.aphorismus}"`,
     reply_markup: {
       inline_keyboard: [
         [
@@ -1171,8 +1356,23 @@ async function finalizeNewPost(env, chatId, title, markdown) {
     return send(env, chatId, `⚠️ Não publiquei: faltou ${problemas.join(", ")} no frontmatter.`);
   }
 
-  const number = await nextNumber(env);
   const slug = slugify(title);
+  const existingPosts = await listPosts(env).catch(() => []);
+  const duplicado = existingPosts.find((p) => slugFromPath(p) === slug);
+  if (duplicado) {
+    return tg(env, "sendMessage", {
+      chat_id: chatId,
+      text: `⚠️ *Aviso de Duplicação:*\nJá existe um ensaio publicado com o identificador \`${slug}\` (\`${fileName(duplicado)}\`).\n\nPara evitar sobrescrever o artigo existente, altere o título ou edite o existente.`,
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "✏️ Editar Ensaio Existente", callback_data: `ed_open:${duplicado}` }],
+          [{ text: "🗑️ Cancelar Publicação", callback_data: "pub:cancelar" }],
+        ],
+      },
+    });
+  }
+
+  const number = await nextNumber(env);
   const path = `${env.CONTENT_PATH}/${String(number).padStart(4, "0")}.${slug}.md`;
 
   try {
@@ -1552,6 +1752,8 @@ async function sendForEditing(env, chatId, path) {
     return send(env, chatId, `Erro ao baixar o arquivo: ${e.message}`);
   }
 
+  const { data: fm } = parseFrontmatter(file.text);
+  const title = (fm && extractField(fm, "title")) || fileName(path);
   const blocks = splitTextIntoBlocks(file.text, LIMITE_TEXTO);
 
   // O sha identifica a versão exata que você baixou (evita sobrescrever uma
@@ -1562,20 +1764,38 @@ async function sendForEditing(env, chatId, path) {
     sha: file.sha,
     original: file.text,
     blocos: blocks,
+    titulo: title,
+    lastActive: Date.now(),
   });
 
-  // 1ª Mensagem: Explicação clara dos comandos disponíveis
+  // Painel Interativo de Edição com botões
+  await tg(env, "sendMessage", {
+    chat_id: chatId,
+    text: `✏️ *Editando Ensaio:*\n"${title}"\n(\`${fileName(path)}\` · ${blocks.length} bloco${blocks.length > 1 ? "s" : ""})\n\n💡 *O que deseja fazer? Toque em um botão ou use os comandos:*`,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "🧩 Escolher Bloco", callback_data: "ed_menu:blocos" },
+          { text: "📥 Colar no Fim", callback_data: "ed_menu:colar" },
+        ],
+        [
+          { text: "✨ Enriquecer com IA", callback_data: "ed_menu:enriquecer" },
+          { text: "🏷️ Tags & Destaque", callback_data: "ed_menu:tags" },
+        ],
+        [
+          { text: "👁️ Ver Ensaio Completo", callback_data: "ed_menu:ver" },
+          { text: "🚪 Sair da Edição", callback_data: "ed_menu:sair" },
+        ],
+      ],
+    },
+  });
+
+  // Instruções de atalhos rápidos por texto
   await send(
     env,
     chatId,
-    `✏️ Editando: ${fileName(path)}\n\n📌 Comandos disponíveis:\n• /editar <id> — edita apenas um bloco específico (ex: /editar 1)\n• /colar — acrescenta no fim (acumula mensagens até /end)\n• /reescrever — substitui todo o texto\n• /pin — liga/desliga destaque fixado\n• /tag nome — adiciona ou remove tag\n• /cancelar — cancela e descarta alterações\n\nAbaixo envio o texto atual do ensaio dividido em blocos identificados:`
+    `📌 *Atalhos rápidos por texto:*\n• \`/trocar "antigo" por "novo"\` — substituição direta de palavras\n• \`/titulo Novo Título\` — altera só o título\n• \`/descricao Nova Descrição\` — altera só a descrição\n• \`/editar <id>\` — edita bloco específico (ex: /editar 1)\n• \`/colar\` — adiciona texto antes das fontes\n• \`/reescrever\` — substitui todo o corpo\n• \`/ver\` — visualiza o ensaio\n• \`/cancelar\` — sai (salvando cópia na lixeira)`
   );
-
-  // 2ª Mensagem (e seguintes): O texto em si, com ID visível para edição pontual
-  for (let i = 0; i < blocks.length; i++) {
-    const headerBloco = `🧩 [Bloco ${i + 1}/${blocks.length}]`;
-    await send(env, chatId, `${headerBloco}\n\n${blocks[i]}`);
-  }
 }
 
 /**
@@ -1682,6 +1902,83 @@ function montarTextoEditado(original, novoConteudo, modo) {
 
 async function handleEditando(env, chatId, session, msg, text) {
   const blocos = session.blocos || splitTextIntoBlocks(session.original, LIMITE_TEXTO);
+
+  // Alerta preventivo se a sessão foi aberta há mais de 30 minutos (evita colar no post errado)
+  if (session.lastActive && Date.now() - session.lastActive > 30 * 60 * 1000) {
+    const { data: fm } = parseFrontmatter(session.original);
+    const titulo = (fm && extractField(fm, "title")) || fileName(session.path);
+    await send(
+      env,
+      chatId,
+      `⏳ *Lembrete de Segurança:* A edição de *"${titulo}"* (\`${fileName(session.path)}\`) foi iniciada há mais de 30 minutos.\nConfirme se este é o artigo correto antes de enviar comandos de alteração.`
+    );
+  }
+
+  // Visualização completa sob demanda
+  if (text === "/ver" || text === "/visualizar") {
+    const alvo = session.pendente ?? session.original;
+    const blocosVer = splitTextIntoBlocks(alvo, LIMITE_TEXTO);
+    await send(env, chatId, `👁️ *Visualizando ${fileName(session.path)}:*`);
+    for (let i = 0; i < blocosVer.length; i++) {
+      const prefix = blocosVer.length > 1 ? `📄 [Parte ${i + 1}/${blocosVer.length}]\n\n` : "";
+      await send(env, chatId, `${prefix}${blocosVer[i]}`);
+    }
+    return;
+  }
+
+  // Substituição cirúrgica de palavras ou frases
+  const matchTrocar = text?.match(/^\/(?:trocar|substituir)\s+(?:["'“](.+?)["'”]|(\S+))\s+por\s+(?:["'“]([\s\S]+?)["'”]|([\s\S]+))$/i);
+  if (matchTrocar) {
+    const antigo = (matchTrocar[1] || matchTrocar[2] || "").trim();
+    const novo = (matchTrocar[3] || matchTrocar[4] || "").trim();
+
+    if (!antigo) {
+      return send(env, chatId, '💡 Como usar: `/trocar "palavra errada" por "palavra correta"`');
+    }
+
+    const { data: fmOriginal, body: corpoOriginal } = parseFrontmatter(session.original);
+    const alvo = corpoOriginal || session.original;
+
+    if (!alvo.includes(antigo)) {
+      return send(env, chatId, `⚠️ O trecho "${antigo}" não foi encontrado no texto do ensaio.`);
+    }
+
+    const ocorrencias = alvo.split(antigo).length - 1;
+    const infoOcorrencias = ocorrencias > 1 ? ` (${ocorrencias} ocorrências substituídas)` : "";
+    const novoCorpo = alvo.split(antigo).join(novo);
+    const header = extractHeader(fmOriginal);
+    const novoMarkdown = buildMarkdown(header, novoCorpo);
+
+    return commitEdit(
+      env,
+      chatId,
+      session,
+      novoMarkdown,
+      `substituir "${antigo}" por "${novo}"${infoOcorrencias}`
+    );
+  }
+
+  // Alteração isolada do título
+  if (text?.startsWith("/titulo")) {
+    const novoTitulo = text.replace(/^\/titulo\s*/i, "").trim().replace(/^["']|["']$/g, "");
+    if (!novoTitulo) return send(env, chatId, "Use: `/titulo Novo Título do Ensaio`");
+    const { data: fm, body } = parseFrontmatter(session.original);
+    const header = extractHeader(fm) || { date: today(), description: "" };
+    header.title = novoTitulo;
+    const novoMarkdown = buildMarkdown(header, body);
+    return commitEdit(env, chatId, session, novoMarkdown, `título alterado para "${novoTitulo}"`);
+  }
+
+  // Alteração isolada da descrição
+  if (text?.startsWith("/descricao") || text?.startsWith("/descrição")) {
+    const novaDesc = text.replace(/^\/(?:descricao|descrição)\s*/i, "").trim().replace(/^["']|["']$/g, "");
+    if (!novaDesc) return send(env, chatId, "Use: `/descricao Nova descrição do ensaio`");
+    const { data: fm, body } = parseFrontmatter(session.original);
+    const header = extractHeader(fm) || { title: fileName(session.path), date: today() };
+    header.description = novaDesc;
+    const novoMarkdown = buildMarkdown(header, body);
+    return commitEdit(env, chatId, session, novoMarkdown, `descrição alterada`);
+  }
 
   // Comando /editar <id> [novoTexto]
   if (text?.startsWith("/editar")) {
@@ -1994,23 +2291,215 @@ async function handlePinOuTag(env, chatId, session, text) {
   return commitEdit(env, chatId, session, novo, resumo);
 }
 
-// Usado por /reescrever, /colar, /pin e /tag — um único caminho pra validar,
-// commitar, avisar e checar o deploy.
+// Usado por /reescrever, /colar, /pin, /tag, /trocar, /titulo, /descricao e blocos.
+// Encaminha SEMPRE para a tela de confirmação e prévia do usuário antes de commitar.
 async function commitEdit(env, chatId, session, novo, resumo = "") {
+  return solicitarConfirmacaoEdicao(env, chatId, session, novo, resumo);
+}
+
+function formatarTempoAtras(timestamp) {
+  if (!timestamp) return "pouco tempo";
+  const diffSeg = Math.floor((Date.now() - timestamp) / 1000);
+  if (diffSeg < 60) return "poucos segundos";
+  const diffMin = Math.floor(diffSeg / 60);
+  if (diffMin < 60) return `${diffMin} minuto${diffMin > 1 ? "s" : ""}`;
+  const diffHoras = Math.floor(diffMin / 60);
+  if (diffHoras < 24) return `${diffHoras} hora${diffHoras > 1 ? "s" : ""}`;
+  const diffDias = Math.floor(diffHoras / 24);
+  return `${diffDias} dia${diffDias > 1 ? "s" : ""}`;
+}
+
+function gerarPreviaDiff(original, novo) {
+  if (original === novo) return "ℹ️ Nenhuma alteração de texto detectada.";
+  const { body: bOrig } = parseFrontmatter(original);
+  const { body: bNovo } = parseFrontmatter(novo);
+
+  if (bNovo.startsWith(bOrig.trim())) {
+    const adicionado = bNovo.slice(bOrig.trim().length).trim();
+    const trecho = adicionado.length > 250 ? `${adicionado.slice(0, 250)}...` : adicionado;
+    return `📝 *Trecho adicionado:*\n> ${trecho.replace(/\n+/g, "\n> ")}`;
+  }
+
+  const linhasNovas = bNovo.split("\n").filter((l) => l.trim().length > 15 && !l.startsWith("#"));
+  const trecho = linhasNovas.slice(0, 3).join("\n");
+  const previa = trecho.length > 250 ? `${trecho.slice(0, 250)}...` : trecho;
+  return `📝 *Prévia do conteúdo atualizado:*\n> ${previa.replace(/\n+/g, "\n> ")}`;
+}
+
+async function solicitarConfirmacaoEdicao(env, chatId, session, novo, resumoAcao = "") {
   const problemas = validateFrontmatter(novo);
   if (problemas.length) {
+    return send(env, chatId, `⚠️ Não posso salvar: faltou ${problemas.join(", ")} no frontmatter.`);
+  }
+
+  const { data: fm } = parseFrontmatter(session.original);
+  const titulo = (fm && extractField(fm, "title")) || fileName(session.path);
+  const charsAntigo = session.original.length;
+  const charsNovo = novo.length;
+  const diffChars = charsNovo - charsAntigo;
+  const diffFormatado = diffChars > 0 ? `+${diffChars}` : `${diffChars}`;
+
+  await saveSession(env, chatId, {
+    mode: "confirmar-edicao",
+    path: session.path,
+    sha: session.sha,
+    original: session.original,
+    novo,
+    resumo: resumoAcao,
+    titulo,
+  });
+
+  const previaDiff = gerarPreviaDiff(session.original, novo, resumoAcao);
+
+  return tg(env, "sendMessage", {
+    chat_id: chatId,
+    text: `⚠️ *Confirmação de Alteração*\n\n📄 *Ensaio:* "${titulo}" (\`${fileName(session.path)}\`)\n🎯 *Ação:* ${resumoAcao || "alteração de conteúdo"}\n📊 *Tamanho:* ${charsAntigo} → ${charsNovo} caracteres (${diffFormatado})\n\n${previaDiff}\n\n*Tem certeza que deseja aplicar esta alteração no blog?*`,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "✅ Confirmar e Publicar", callback_data: "ed:confirmar" },
+          { text: "👁️ Ver Prévia", callback_data: "ed:ver_previa" },
+        ],
+        [
+          { text: "✏️ Voltar e Continuar", callback_data: "ed:continuar" },
+          { text: "❌ Descartar", callback_data: "ed:descartar" },
+        ],
+      ],
+    },
+  });
+}
+
+async function finalizeEdit(env, chatId, session) {
+  const problemas = validateFrontmatter(session.novo);
+  if (problemas.length) {
+    await env.KV.delete(sessionKey(chatId));
     return send(env, chatId, `⚠️ Não publiquei: faltou ${problemas.join(", ")} no frontmatter.`);
   }
+
   try {
-    const commitSha = await commitFile(env, session.path, novo, `revisão: ${fileName(session.path)}`, session.sha);
+    const commitSha = await commitFile(
+      env,
+      session.path,
+      session.novo,
+      `revisão: ${fileName(session.path)}${session.resumo ? ` (${session.resumo})` : ""}`,
+      session.sha
+    );
+
+    // Salva versão anterior no KV para /desfazer por até 7 dias
+    await env.KV.put(
+      undoKey(session.path),
+      JSON.stringify({
+        path: session.path,
+        text: session.original,
+        undoCommitSha: commitSha,
+        date: Date.now(),
+      }),
+      { expirationTtl: 60 * 60 * 24 * 7 }
+    );
+
+    await env.KV.put(`last_edited:${chatId}`, session.path, { expirationTtl: 60 * 60 * 24 * 7 });
     await env.KV.delete(sessionKey(chatId));
     const slug = slugFromPath(session.path);
     await env.KV.delete(`card:${slug}`).catch(() => {});
-    await send(env, chatId, `✅ ${session.path} atualizado${resumo ? ` (${resumo})` : ""}.\n${commitSha ? `Commit: \`${commitSha.slice(0, 7)}\`\n` : ""}Aguardando build da Vercel...`);
+
+    await send(
+      env,
+      chatId,
+      `✅ *${fileName(session.path)}* atualizado com sucesso!\n${session.resumo ? `Ação: ${session.resumo}\n` : ""}${commitSha ? `Commit: \`${commitSha.slice(0, 7)}\`\n` : ""}Aguardando build da Vercel...\n\n💡 _Se cometeu algum engano, use /desfazer para voltar à versão anterior._`
+    );
     await avisarLink(env, chatId, slug, commitSha);
   } catch (e) {
     await send(env, chatId, `Erro ao publicar: ${e.message}`);
   }
+}
+
+async function handleDesfazer(env, chatId, termo) {
+  let targetPath = null;
+  if (termo) {
+    const list = await listPosts(env).catch(() => []);
+    const found = list.find((p) => fileName(p).toLowerCase().includes(termo.toLowerCase()));
+    if (found) targetPath = found;
+  }
+  if (!targetPath) {
+    targetPath = await env.KV.get(`last_edited:${chatId}`);
+  }
+  if (!targetPath) {
+    return send(env, chatId, "Nenhuma alteração recente encontrada para desfazer. Use: `/desfazer nome-do-ensaio`.");
+  }
+
+  const undoData = await env.KV.get(undoKey(targetPath), "json");
+  if (!undoData || !undoData.text) {
+    return send(env, chatId, `Não há histórico anterior salvo para desfazer em "${fileName(targetPath)}".`);
+  }
+
+  const tempoAtras = formatarTempoAtras(undoData.date);
+
+  return tg(env, "sendMessage", {
+    chat_id: chatId,
+    text: `⚠️ *Reverter Ensaio*\n\n📄 *Ensaio:* \`${fileName(targetPath)}\`\n🕒 *Alterado:* há ${tempoAtras}\n\nDeseja restaurar o ensaio para o estado anterior a essa alteração?`,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "⏪ Sim, Desfazer e Reverter", callback_data: `undo:confirm:${targetPath}` },
+          { text: "❌ Cancelar", callback_data: "undo:cancel" },
+        ],
+      ],
+    },
+  });
+}
+
+async function executeUndo(env, chatId, path) {
+  const undoData = await env.KV.get(undoKey(path), "json");
+  if (!undoData || !undoData.text) {
+    return send(env, chatId, "Dados de reversão não encontrados.");
+  }
+  try {
+    const currentFile = await getFile(env, path);
+    const commitSha = await commitFile(
+      env,
+      path,
+      undoData.text,
+      `reversão: desfaz alteração de ${fileName(path)}`,
+      currentFile.sha
+    );
+    await env.KV.delete(undoKey(path));
+    const slug = slugFromPath(path);
+    await env.KV.delete(`card:${slug}`).catch(() => {});
+    await send(
+      env,
+      chatId,
+      `⏪ *Alteração desfeita com sucesso!*\nO ensaio \`${fileName(path)}\` foi revertido à versão anterior.\n${commitSha ? `Commit: \`${commitSha.slice(0, 7)}\`\n` : ""}Aguardando build da Vercel...`
+    );
+    await avisarLink(env, chatId, slug, commitSha);
+  } catch (e) {
+    return send(env, chatId, `⚠️ Erro ao reverter: ${e.message}`);
+  }
+}
+
+async function handleRestaurar(env, chatId) {
+  const backup = await env.KV.get(backupKey(chatId), "json");
+  if (!backup || !backup.text) {
+    return send(env, chatId, "Nenhum texto recente encontrado na lixeira de segurança.");
+  }
+  const tempo = formatarTempoAtras(backup.discardedAt || backup.time);
+  const trecho = backup.text.length > 300 ? `${backup.text.slice(0, 300)}...` : backup.text;
+  await send(
+    env,
+    chatId,
+    `♻️ *Texto Recuperado da Lixeira* (descartado há ${tempo}):\n\n${trecho}\n\n📊 *Total:* ${backup.text.length} caracteres.`
+  );
+  return tg(env, "sendMessage", {
+    chat_id: chatId,
+    text: "O que deseja fazer com este conteúdo?",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "✍️ Criar Novo Ensaio", callback_data: "restaurar:criar" },
+          { text: "🗑️ Limpar Lixeira", callback_data: "restaurar:limpar" },
+        ],
+      ],
+    },
+  });
 }
 
 // Divide o texto em blocos que respeitam cabeçalhos (##, ###) e o limite de caracteres
@@ -2716,9 +3205,12 @@ const send = (env, chat_id, text) => tg(env, "sendMessage", { chat_id, text });
 
 const sessionKey = (chatId) => `session:${chatId}`;
 const listKey = (chatId) => `list:${chatId}`;
+const undoKey = (path) => `undo:${path}`;
+const backupKey = (chatId) => `backup:${chatId}`;
 
 function saveSession(env, chatId, data) {
-  return env.KV.put(sessionKey(chatId), JSON.stringify(data), { expirationTtl: 60 * 60 * 24 * 7 });
+  const comTimestamp = { ...data, lastActive: Date.now() };
+  return env.KV.put(sessionKey(chatId), JSON.stringify(comTimestamp), { expirationTtl: 60 * 60 * 24 * 7 });
 }
 
 function today() {
