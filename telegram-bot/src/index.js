@@ -462,13 +462,38 @@ async function handleEscrevendo(env, chatId, session, msg, text) {
 
   if (!text) return send(env, chatId, "Nesta etapa eu aceito texto ou áudio de voz. Para terminar, mande /end (ou /rascunho pra salvar sem publicar).");
 
-  const fimNoFinal = text.match(/\/end\s*$/);
-  const ehFim = text === "/end" || Boolean(fimNoFinal);
-  const pedaco = text === "/end" ? "" : fimNoFinal ? text.slice(0, fimNoFinal.index).trim() : text;
+  const fimNoFinal = text.match(/\/end\s*$/i);
+  const ehFim = text.trim() === "/end" || Boolean(fimNoFinal);
+  const pedacoBruto = text.trim() === "/end" ? "" : fimNoFinal ? text.slice(0, fimNoFinal.index).trim() : text;
+
+  if (
+    text.startsWith("/") &&
+    !ehFim &&
+    text !== "/rascunho" &&
+    text !== "/revisar" &&
+    text !== "/analisar" &&
+    text !== "/contrapor" &&
+    text !== "/debate" &&
+    text !== "/sugerir" &&
+    text !== "/fontes" &&
+    text !== "/fonte" &&
+    text !== "/cancelar"
+  ) {
+    const cmdDesconhecido = text.split(/\s+/)[0];
+    return send(
+      env,
+      chatId,
+      `⚠️ Comando "${cmdDesconhecido}" não reconhecido durante a escrita. Continue escrevendo ou use /end para finalizar.`
+    );
+  }
+
+  const pedaco = sanitizarTextoEnsaio(pedacoBruto);
 
   if (!ehFim) {
-    const body = session.body ? `${session.body}\n\n${pedaco}` : pedaco;
-    await saveSession(env, chatId, { ...session, body });
+    if (pedaco) {
+      const body = session.body ? `${session.body}\n\n${pedaco}` : pedaco;
+      await saveSession(env, chatId, { ...session, body });
+    }
     return; // acumula em silêncio — pode mandar quantas mensagens quiser
   }
 
@@ -1553,25 +1578,65 @@ async function sendForEditing(env, chatId, path) {
   }
 }
 
+/**
+ * Remove qualquer comando de bot que possa ter sido enviado no corpo da mensagem.
+ * Linhas que contenham apenas comandos ou comandos isolados de barra são removidas.
+ */
+function sanitizarTextoEnsaio(texto) {
+  if (typeof texto !== "string") return "";
+
+  const regexComandoLinha = /^\s*\/(?:colar|end|reescrever|editar|cancelar|revisar|analisar|contrapor|debate|fontes?|sugerir|enriquecer|pin|tag|rascunhos?|novo|ajuda|start|ideias?)(?:\s+.*)?$/i;
+
+  const linhas = texto.split("\n");
+  const linhasFiltradas = linhas.filter((linha) => !regexComandoLinha.test(linha));
+
+  return linhasFiltradas.join("\n").trim();
+}
+
+/**
+ * Divide o corpo de um ensaio entre o texto principal e os apêndices terminais
+ * (Fontes, Leituras Recomendadas, Links, Referências, Glossário, Scholia, Resumo, Síntese).
+ * Garante que essas seções fiquem sempre no fim do artigo.
+ */
+function separarCorpoEApindicesFinais(corpo) {
+  if (!corpo) return { principal: "", apendices: "" };
+
+  const regexApindice = /\n(?=##\s*(?:Fontes|Leituras|Referências|Referencias|Links|Gloss[aá]rio|Scholia|Resumo|S[íi]ntese)\b)/i;
+  const match = corpo.match(regexApindice);
+
+  if (!match || match.index === undefined) {
+    if (/^##\s*(?:Fontes|Leituras|Referências|Referencias|Links|Gloss[aá]rio|Scholia|Resumo|S[íi]ntese)\b/i.test(corpo.trim())) {
+      return { principal: "", apendices: corpo.trim() };
+    }
+    return { principal: corpo.trim(), apendices: "" };
+  }
+
+  const principal = corpo.slice(0, match.index).trim();
+  const apendices = corpo.slice(match.index).trim();
+
+  return { principal, apendices };
+}
+
 function extrairCorpo(raw) {
   const { data: fm, body } = parseFrontmatter(raw);
-  return (fm ? body : raw).trim();
+  return sanitizarTextoEnsaio(fm ? body : raw);
 }
 
 function montarTextoComBlocoEditado(original, blocos, blocoIdx, novoTextoBloco) {
+  const textoLimpo = sanitizarTextoEnsaio(novoTextoBloco);
   const { data: fmOriginal } = parseFrontmatter(original);
   const novosBlocos = [...blocos];
 
   if (blocoIdx === 0) {
-    const { data: fmNovo } = parseFrontmatter(novoTextoBloco);
+    const { data: fmNovo } = parseFrontmatter(textoLimpo);
     if (!fmNovo && fmOriginal) {
       const header = extractHeader(fmOriginal);
-      novosBlocos[0] = buildMarkdown(header, novoTextoBloco.trim());
+      novosBlocos[0] = buildMarkdown(header, textoLimpo);
       return novosBlocos.join("\n\n");
     }
   }
 
-  novosBlocos[blocoIdx] = novoTextoBloco.trim();
+  novosBlocos[blocoIdx] = textoLimpo;
   return novosBlocos.join("\n\n");
 }
 
@@ -1579,18 +1644,39 @@ function montarTextoEditado(original, novoConteudo, modo) {
   const { data: fmOriginal, body: bodyOriginal } = parseFrontmatter(original);
   const { data: fmNovo } = parseFrontmatter(novoConteudo);
 
+  const conteudoLimpo = sanitizarTextoEnsaio(novoConteudo);
+
   if (modo === "reescrever") {
     if (fmNovo) return novoConteudo;
     const header = extractHeader(fmOriginal);
-    return buildMarkdown(header, novoConteudo.trim());
+    return buildMarkdown(header, conteudoLimpo);
   }
 
-  const corpoAdicionar = extrairCorpo(novoConteudo);
+  const corpoAdicionar = extrairCorpo(conteudoLimpo);
+  if (!corpoAdicionar) {
+    return original;
+  }
+
   if (!fmOriginal) {
+    const { principal, apendices } = separarCorpoEApindicesFinais(original);
+    if (apendices) {
+      return `${principal ? principal + "\n\n" : ""}${corpoAdicionar}\n\n${apendices}\n`;
+    }
     return `${original.trim()}\n\n${corpoAdicionar}\n`;
   }
+
   const header = extractHeader(fmOriginal);
-  const corpoAtualizado = `${bodyOriginal.trim()}\n\n${corpoAdicionar}`;
+  const { principal, apendices } = separarCorpoEApindicesFinais(bodyOriginal);
+
+  let corpoAtualizado;
+  if (apendices) {
+    corpoAtualizado = principal
+      ? `${principal}\n\n${corpoAdicionar}\n\n${apendices}`
+      : `${corpoAdicionar}\n\n${apendices}`;
+  } else {
+    corpoAtualizado = `${bodyOriginal.trim()}\n\n${corpoAdicionar}`;
+  }
+
   return buildMarkdown(header, corpoAtualizado);
 }
 
@@ -1666,9 +1752,10 @@ async function handleEditando(env, chatId, session, msg, text) {
   }
 
   // Comando /colar
-  const ehColarComando = text === "/colar" || text?.startsWith("/colar ");
+  const matchColar = text?.match(/^\/colar(?:\s+([\s\S]*))?$/i);
+  const ehColarComando = text === "/colar" || Boolean(matchColar);
   if (ehColarComando) {
-    const textoInline = text?.startsWith("/colar ") ? text.replace(/^\/colar\s+/, "").trim() : "";
+    const textoInline = sanitizarTextoEnsaio(matchColar ? matchColar[1] : "");
     await saveSession(env, chatId, {
       ...session,
       blocos,
@@ -1680,13 +1767,13 @@ async function handleEditando(env, chatId, session, msg, text) {
       return send(
         env,
         chatId,
-        `📥 Modo colar ativado com texto inicial. Continue enviando mensagens e termine com /end para acrescentar ao fim do ensaio.`
+        `📥 Modo colar ativado com texto inicial. Continue enviando mensagens e termine com /end para acrescentar ao ensaio (antes de fontes/links).`
       );
     }
     return send(
       env,
       chatId,
-      "📥 Modo colar ativado. Mande todo o conteúdo que deseja acrescentar (quantas mensagens ou áudios quiser). Quando terminar, mande /end para aplicar no fim do ensaio."
+      "📥 Modo colar ativado. Mande todo o conteúdo que deseja acrescentar (quantas mensagens ou áudios quiser). Quando terminar, mande /end para aplicar no ensaio (antes de fontes/links)."
     );
   }
 
@@ -1705,9 +1792,10 @@ async function handleEditando(env, chatId, session, msg, text) {
       conteudo = normalize(await downloadFile(env, msg.document.file_id));
     }
 
-    const fimNoFinal = conteudo.match(/\/end\s*$/);
-    const ehFim = conteudo === "/end" || Boolean(fimNoFinal);
-    const pedaco = conteudo === "/end" ? "" : fimNoFinal ? conteudo.slice(0, fimNoFinal.index).trim() : conteudo;
+    const fimNoFinal = conteudo.match(/\/end\s*$/i);
+    const ehFim = conteudo.trim() === "/end" || Boolean(fimNoFinal);
+    const pedacoBruto = conteudo.trim() === "/end" ? "" : fimNoFinal ? conteudo.slice(0, fimNoFinal.index).trim() : conteudo;
+    const pedaco = sanitizarTextoEnsaio(pedacoBruto);
 
     let bufferAtual = session.colarBuffer || "";
     if (pedaco) {
@@ -1724,17 +1812,18 @@ async function handleEditando(env, chatId, session, msg, text) {
     }
 
     const novo = montarTextoEditado(session.original, bufferAtual, "colar");
-    return commitEdit(env, chatId, session, novo, "conteúdo adicionado ao fim");
+    return commitEdit(env, chatId, session, novo, "conteúdo adicionado ao ensaio");
   }
 
   // Comando /reescrever
-  const ehReescreverComando = text === "/reescrever" || text?.startsWith("/reescrever ");
+  const matchReescrever = text?.match(/^\/reescrever(?:\s+([\s\S]*))?$/i);
+  const ehReescreverComando = text === "/reescrever" || Boolean(matchReescrever);
   const ehEnd = text === "/end";
 
   if (ehReescreverComando) {
-    const textoParaReescrever = text?.startsWith("/reescrever ")
-      ? text.replace(/^\/reescrever\s+/, "").trim()
-      : session.pendente;
+    const textoParaReescrever = matchReescrever && matchReescrever[1]?.trim()
+      ? sanitizarTextoEnsaio(matchReescrever[1])
+      : sanitizarTextoEnsaio(session.pendente || "");
 
     if (!textoParaReescrever?.trim()) {
       return send(env, chatId, "Mande o novo conteúdo completo (texto ou arquivo), ou envie `/reescrever seu texto aqui`.");
@@ -1746,7 +1835,7 @@ async function handleEditando(env, chatId, session, msg, text) {
 
   if (ehEnd && session.pendente) {
     const novo = montarTextoEditado(session.original, session.pendente, "colar");
-    return commitEdit(env, chatId, session, novo, "conteúdo adicionado ao fim");
+    return commitEdit(env, chatId, session, novo, "conteúdo adicionado ao ensaio");
   }
 
   if (ehEnd && !session.pendente) {
@@ -1852,12 +1941,23 @@ async function handleEditando(env, chatId, session, msg, text) {
     }
   }
 
-  if (!conteudo?.trim()) {
+  // Se o usuário digitou comando com barra não reconhecido nesta etapa, barra para não virar texto
+  if (text?.startsWith("/")) {
+    const cmdDesconhecido = text.split(/\s+/)[0];
+    return send(
+      env,
+      chatId,
+      `⚠️ Comando "${cmdDesconhecido}" não reconhecido neste modo de edição.\n\nUse:\n• /colar (acrescenta preservando fontes/resumo no fim)\n• /reescrever (substitui todo o texto)\n• /editar <id> (edita bloco pontual)\n• /enriquecer\n• /fontes\n• /revisar\n• /cancelar`
+    );
+  }
+
+  const conteudoLimpo = sanitizarTextoEnsaio(conteudo);
+  if (!conteudoLimpo) {
     return send(env, chatId, "Mande o texto editado, um áudio ou arquivo .md, e depois use /colar ou /reescrever (ou /cancelar).");
   }
 
-  await saveSession(env, chatId, { ...session, pendente: conteudo });
-  return send(env, chatId, `📝 Conteúdo recebido (${conteudo.length} caracteres)!\n\nEnvie /colar para acrescentar no fim do ensaio, ou /reescrever para substituir tudo.\n(Ou /cancelar para desistir)`);
+  await saveSession(env, chatId, { ...session, pendente: conteudoLimpo });
+  return send(env, chatId, `📝 Conteúdo recebido (${conteudoLimpo.length} caracteres)!\n\nEnvie /colar para acrescentar no ensaio (antes de fontes/links), ou /reescrever para substituir tudo.\n(Ou /cancelar para desistir)`);
 }
 
 // /pin: alterna pinned. /tag nome-da-tag: adiciona a tag se não tiver, remove
